@@ -6,7 +6,7 @@
   "color": "#D69A3F",
   "misiones": {
     "node": true,
-    "nextTailwind": false,
+    "nextTailwind": true,
     "v0": false,
     "opencode": false,
     "supabase": false
