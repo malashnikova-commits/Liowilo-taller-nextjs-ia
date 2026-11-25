@@ -1,0 +1,15 @@
+{
+  "usuario": "malashnikova-commits",
+  "nombre": "Alan Isaac Camacho Mondragón",
+  "frase": "Sigue domando mujeres, aunque no las cautives. Un buen hombre siembra flores, aunque no las cultive.",
+  "emoji": "👽",
+  "color": "#D69A3F",
+  "misiones": {
+    "node": true,
+    "nextTailwind": false,
+    "v0": false,
+    "opencode": false,
+    "supabase": false
+  },
+  "promptFavorito": ""
+}
