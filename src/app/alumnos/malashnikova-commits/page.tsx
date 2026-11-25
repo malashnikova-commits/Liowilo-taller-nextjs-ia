@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getAlumno } from "@/lib/alumnos";
 import { ComponenteV0 } from "./ComponenteV0";
 import { Reacciones } from "./Reacciones";
+import { AulaInteractiva } from "./aula/AulaInteractiva";
 
 const USUARIO = "malashnikova-commits";
 
@@ -18,7 +19,7 @@ export default function PaginaAlumno() {
         backgroundSize: "20px 20px",
       }}
     >
-      <main id="contenido-principal" className="mx-auto max-w-3xl px-4 py-12">
+      <main id="contenido-principal" className="mx-auto max-w-4xl px-4 py-12">
         <Link
           href="/"
           className="inline-flex items-center gap-2 rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-4 py-1.5 font-mono text-sm font-semibold text-[#123850] shadow-[3px_3px_0px_#123850] transition hover:-translate-y-0.5 hover:bg-[#D69A3F]/20"
@@ -124,6 +125,9 @@ export default function PaginaAlumno() {
 
         {/* ───────── MISIÓN 4 · OpenCode + NVIDIA ───────── */}
         <Reacciones />
+
+        {/* ───────── PLATAFORMA INTERACTIVA DE AULA (DUOLINGO NODES + CALENDARIO + PROYECTOS) ───────── */}
+        <AulaInteractiva />
       </main>
     </div>
   );
