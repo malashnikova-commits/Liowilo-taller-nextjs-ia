@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAlumno } from "@/lib/alumnos";
 import { ComponenteV0 } from "./ComponenteV0";
+import { Reacciones } from "./Reacciones";
 
 const USUARIO = "malashnikova-commits";
 
@@ -117,6 +118,7 @@ export default function PaginaAlumno() {
         {/* ───────── MISIÓN 4 · OpenCode + NVIDIA ─────────
             Pídele a OpenCode que cree un componente y lo agregue debajo de este comentario.
             Ejemplo de prompt en el README. */}
+        <Reacciones />
       </main>
     </div>
   );

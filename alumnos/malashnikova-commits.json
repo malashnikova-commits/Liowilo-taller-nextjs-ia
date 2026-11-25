@@ -8,8 +8,8 @@
     "node": true,
     "nextTailwind": true,
     "v0": true,
-    "opencode": false,
+    "opencode": true,
     "supabase": false
   },
-  "promptFavorito": ""
+  "promptFavorito": "Lee src/app/alumnos/malashnikova-commits/page.tsx. Crea un componente cliente Reacciones.tsx con 3 botones de emoji que cuenten clics y un modo claro/oscuro estilo sketch doodle en Baby Powder, Gibraltar Sea y Gold Coast."
 }
