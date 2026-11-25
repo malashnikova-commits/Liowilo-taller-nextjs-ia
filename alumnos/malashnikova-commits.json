@@ -7,7 +7,7 @@
   "misiones": {
     "node": true,
     "nextTailwind": true,
-    "v0": false,
+    "v0": true,
     "opencode": false,
     "supabase": false
   },
