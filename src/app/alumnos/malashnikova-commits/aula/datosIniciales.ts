@@ -1,3 +1,5 @@
+"use client";
+
 import type { ConfiguracionCurso, ProgresoAlumno } from "./types";
 
 export const PIN_DOCENTE_INICIAL = "DOCENTE2026";
@@ -207,7 +209,7 @@ export function crearCursoInicial(hoyISO: string = FECHA_SEMILLA_SSR): Configura
         ],
         preguntaRapida: {
           pregunta: "¿Qué módulo nativo permite a Node.js leer la carpeta /alumnos en el servidor?",
-          opciones: ["window.localStorage", "node:fs", "document.querySelector"],
+          opciones: ["API Web Storage del navegador", "node:fs", "document.querySelector"],
           indiceCorrecto: 1,
         },
       },
@@ -235,7 +237,7 @@ export function crearCursoInicial(hoyISO: string = FECHA_SEMILLA_SSR): Configura
           { id: "c3-3", texto: "Usar style={{ color }} para datos dinámicos en vez de clases partidas" },
         ],
         preguntaRapida: {
-          pregunta: "¿Por qué bg-${color}-500 no funciona en Tailwind CSS?",
+          pregunta: "¿Por qué concatenar fragmentos dinámicos de clases de color no funciona en Tailwind CSS?",
           opciones: [
             "Porque Tailwind escanea nombres de clase completos en texto estático",
             "Porque Tailwind solo acepta colores en RGB",

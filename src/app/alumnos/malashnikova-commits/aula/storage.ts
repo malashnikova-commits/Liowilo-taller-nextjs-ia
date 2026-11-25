@@ -1,3 +1,5 @@
+"use client";
+
 import { crearCursoInicial, crearProgresoInicial } from "./datosIniciales";
 import type { ConfiguracionCurso, ProgresoAlumno } from "./types";
 
