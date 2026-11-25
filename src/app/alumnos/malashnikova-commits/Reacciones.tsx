@@ -22,9 +22,7 @@ export function Reacciones() {
 
   const sumar = (id: string) => {
     setReacciones((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, votos: item.votos + 1 } : item
-      )
+      prev.map((item) => (item.id === id ? { ...item, votos: item.votos + 1 } : item))
     );
     setUltima(id);
   };
@@ -42,10 +40,10 @@ export function Reacciones() {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div>
           <span
-            className={`inline-block -rotate-1 rounded-full border-2 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider ${
+            className={`inline-block -rotate-1 rounded-full border-2 px-2.5 py-0.5 font-mono text-[11px] font-black uppercase tracking-wider ${
               modoOscuro
                 ? "border-[#FEFEFA] bg-[#D69A3F] text-[#123850]"
-                : "border-[#123850] bg-[#D69A3F] text-[#FEFEFA]"
+                : "border-[#123850] bg-[#D69A3F] text-[#123850]"
             }`}
           >
             ✦ Misión 4 · Reacciones
@@ -55,10 +53,10 @@ export function Reacciones() {
           </h2>
         </div>
 
-        {/* Toggle claro (Baby Powder) / oscuro (Gibraltar Sea) */}
         <button
           type="button"
           onClick={() => setModoOscuro((prev) => !prev)}
+          aria-pressed={modoOscuro}
           className={`cursor-pointer rounded-full border-2 px-3.5 py-1.5 font-mono text-xs font-bold transition-transform hover:-translate-y-0.5 active:translate-y-0 ${
             modoOscuro
               ? "border-[#D69A3F] bg-[#FEFEFA] text-[#123850] shadow-[2px_2px_0px_#D69A3F]"
@@ -80,10 +78,10 @@ export function Reacciones() {
               className={`group flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] ${
                 modoOscuro
                   ? activa
-                    ? "border-[#D69A3F] bg-[#D69A3F]/20 text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F]"
+                    ? "border-[#D69A3F] bg-[#FEFEFA]/10 text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F]"
                     : "border-[#FEFEFA]/60 bg-[#123850] text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F]"
                   : activa
-                    ? "border-[#123850] bg-[#D69A3F]/20 text-[#123850] shadow-[3px_3px_0px_#123850]"
+                    ? "border-[#123850] bg-[#FAF6EC] text-[#123850] shadow-[3px_3px_0px_#123850]"
                     : "border-[#123850] bg-[#FEFEFA] text-[#123850] shadow-[3px_3px_0px_#123850]"
               }`}
             >
@@ -97,7 +95,7 @@ export function Reacciones() {
                 className={`rounded-full border-2 px-2.5 py-0.5 font-mono text-xs font-black ${
                   modoOscuro
                     ? "border-[#FEFEFA] bg-[#D69A3F] text-[#123850]"
-                    : "border-[#123850] bg-[#D69A3F] text-[#FEFEFA]"
+                    : "border-[#123850] bg-[#D69A3F] text-[#123850]"
                 }`}
               >
                 {item.votos}
@@ -108,11 +106,12 @@ export function Reacciones() {
       </div>
 
       <p
-        className={`mt-4 text-right font-mono text-xs font-semibold ${
-          modoOscuro ? "text-[#FEFEFA]/75" : "text-[#123850]/70"
+        className={`mt-4 text-right font-mono text-xs font-bold ${
+          modoOscuro ? "text-[#FEFEFA]/85" : "text-[#355870]"
         }`}
       >
-        Total de clics: <span className="font-black text-[#D69A3F]">{total}</span>
+        Total de clics:{" "}
+        <span className="font-black underline decoration-[#D69A3F] decoration-2">{total}</span>
       </p>
     </section>
   );
