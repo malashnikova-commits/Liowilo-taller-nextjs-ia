@@ -4,6 +4,8 @@ import { getAlumno } from "@/lib/alumnos";
 import { ComponenteV0 } from "./ComponenteV0";
 import { Reacciones } from "./Reacciones";
 import { AulaInteractiva } from "./aula/AulaInteractiva";
+import { EstudioAlumno } from "./EstudioAlumno";
+import { BOTON_CLARO, ESTILO_LIBRETA, PANEL_PRINCIPAL } from "./temaSketch";
 
 const USUARIO = "malashnikova-commits";
 
@@ -13,121 +15,62 @@ export default function PaginaAlumno() {
 
   return (
     <div
-      className="min-h-screen bg-[#FAF7EE] text-[#123850] selection:bg-[#D69A3F]/30"
-      style={{
-        backgroundImage: "radial-gradient(#12385024 1.35px, transparent 1.35px)",
-        backgroundSize: "20px 20px",
-      }}
+      className="min-h-screen bg-[#FEFEFA] text-[#123850] selection:bg-[#D69A3F]/20"
+      style={ESTILO_LIBRETA}
     >
-      <main id="contenido-principal" className="mx-auto max-w-4xl px-4 py-12">
+      <main id="contenido-principal" className="mx-auto max-w-4xl px-4 py-10 sm:py-12">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-4 py-1.5 font-mono text-sm font-semibold text-[#123850] shadow-[3px_3px_0px_#123850] transition hover:-translate-y-0.5 hover:bg-[#D69A3F]/20"
+          className={`inline-flex items-center gap-2 px-4 py-1.5 font-mono text-xs font-black ${BOTON_CLARO}`}
         >
-          ← volver al muro
+          ← Muro
         </Link>
 
-        {/* ───────── MISIÓN 2 · Next.js + Tailwind ─────────
-            RETO 2.1  md:flex-row md:items-center
-            RETO 2.2  rounded-2xl
-            RETO 2.3  hover:scale-[1.02] transition
-        */}
-        <div className="relative mt-8 flex flex-col gap-5 rounded-2xl border-[3px] border-[#123850] bg-[#FEFEFA] p-6 shadow-[6px_6px_0px_#123850] transition hover:scale-[1.02] md:flex-row md:items-center">
-          {/* Cinta adhesiva superior Gold Coast */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-3 left-8 h-5 w-16 -rotate-2 rounded-sm border-2 border-[#123850] bg-[#D69A3F] shadow-[2px_2px_0px_#123850]"
-          />
-
-          {/* Sticker esquina superior con contraste WCAG AA (#123850 sobre #D69A3F) */}
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-2 -top-3 rotate-3 rounded-full border-2 border-[#123850] bg-[#D69A3F] px-3 py-0.5 font-mono text-xs font-black uppercase tracking-wider text-[#123850] shadow-[2px_2px_0px_#123850]"
-          >
-            ✦ sketch mode
-          </span>
-
-          <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-[#123850] bg-[#FAF6EC] shadow-[3px_3px_0px_#D69A3F]">
-            <span className="text-5xl">{alumno.emoji}</span>
+        {/* Cabecera limpia de perfil (conserva RETO 2.1, 2.2 y 2.3) */}
+        <header
+          className={`${PANEL_PRINCIPAL} mt-6 flex flex-col gap-5 p-6 transition hover:scale-[1.02] motion-reduce:transition-none md:flex-row md:items-center`}
+        >
+          <div className="flex h-18 w-18 shrink-0 items-center justify-center rounded-full border-[2.5px] border-dashed border-[#123850] bg-[#D69A3F]/20">
+            <span className="text-4xl">{alumno.emoji}</span>
           </div>
 
           <div className="space-y-1.5">
-            <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: "#123850" }}>
-              {alumno.nombre}
-            </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="inline-block rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-2.5 py-0.5 font-mono text-xs font-bold text-[#123850]">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-black tracking-tight text-[#123850] sm:text-3xl">
+                {alumno.nombre}
+              </h1>
+              <span className="rounded-lg border-2 border-[#123850] bg-[#FEFEFA] px-2 py-0.5 font-mono text-xs font-bold text-[#123850]/70">
                 @{alumno.usuario}
-              </p>
-              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-2.5 py-0.5 font-mono text-xs font-bold text-[#123850]">
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 rounded-full border border-[#123850]"
-                  style={{ backgroundColor: alumno.color }}
-                />
-                Gold Coast &amp; Gibraltar Sea
               </span>
             </div>
+
+            <p className="text-sm font-semibold leading-relaxed text-[#123850]/70 sm:text-base">
+              “{alumno.frase}”
+            </p>
           </div>
-        </div>
+        </header>
 
-        {/* Frase con estética doodle / notebook */}
-        <blockquote className="relative mt-8 rounded-2xl border-2 border-dashed border-[#123850] bg-[#FEFEFA] p-5 shadow-[4px_4px_0px_#D69A3F]">
-          <svg
-            aria-hidden="true"
-            className="mb-2 h-3 w-28 text-[#D69A3F]"
-            viewBox="0 0 120 12"
-            fill="none"
-          >
-            <path
-              d="M2 8 C 18 2, 32 12, 48 6 C 64 0, 78 12, 94 6 C 104 2, 112 8, 118 6"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-          <p className="text-lg font-bold leading-relaxed text-[#123850]">
-            “{alumno.frase}”
-          </p>
-        </blockquote>
-
-        {/* RETO 2.4  Sección "Lo que aprendí hoy" con lista <ul> de 3 cosas */}
-        <section className="mt-8 rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-6 shadow-[5px_5px_0px_#123850]">
-          <div className="mb-4 flex items-center gap-2.5">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border-2 border-[#123850] bg-[#D69A3F] text-sm shadow-[2px_2px_0px_#123850]">
-              ✏️
-            </span>
-            <h2 className="text-xl font-black text-[#123850]">Lo que aprendí hoy</h2>
-          </div>
-          <ul className="list-disc space-y-2 pl-5 font-medium text-[#123850] marker:text-[#D69A3F]">
-            <li>
-              Cómo ejecutar JavaScript fuera del navegador con Node.js para leer archivos y
-              automatizar tareas del proyecto.
-            </li>
-            <li>
-              Que en Next.js cada carpeta dentro de{" "}
-              <code className="rounded border border-[#123850]/30 bg-[#FAF6EC] px-1.5 py-0.5 font-mono text-xs font-bold text-[#123850]">
-                src/app
-              </code>{" "}
-              define una ruta automática y cómo separar Server Components de Client Components.
-            </li>
-            <li>
-              Diseñar interfaces Sketch Doodle Art responsivas y accesibles (WCAG AA/AAA) usando
-              clases utilitarias de Tailwind CSS.
-            </li>
-          </ul>
-        </section>
-
-        {/* ───────── MISIÓN 3 · v0 ───────── */}
-        <section className="mt-10">
-          <ComponenteV0 />
-        </section>
-
-        {/* ───────── MISIÓN 4 · OpenCode + NVIDIA ───────── */}
-        <Reacciones />
-
-        {/* ───────── PLATAFORMA INTERACTIVA DE AULA (DUOLINGO NODES + CALENDARIO + PROYECTOS) ───────── */}
-        <AulaInteractiva />
+        {/* Workspace limpio con revelación progresiva y un solo foco activo */}
+        <EstudioAlumno
+          aulaSlot={<AulaInteractiva />}
+          stackSlot={<ComponenteV0 />}
+          reaccionesSlot={<Reacciones />}
+          aprendizajesSlot={
+            <ul className="list-disc space-y-2 pl-5 text-sm font-semibold text-[#123850] marker:text-[#D69A3F]">
+              <li>
+                Ejecutar scripts de Node.js fuera del navegador para automatizar archivos del
+                proyecto.
+              </li>
+              <li>
+                Distinguir rutas App Router, Server Components y Client Components en Next.js.
+              </li>
+              <li>
+                Aplicar un sistema de diseño minimalista y accesible con clases literales de
+                Tailwind CSS.
+              </li>
+            </ul>
+          }
+        />
       </main>
     </div>
   );

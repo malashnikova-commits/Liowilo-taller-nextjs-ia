@@ -2,6 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { playPop, playToggle } from "../sonidos";
+import {
+  BOTON_ACENTO,
+  BOTON_CLARO,
+  BOTON_OSCURO,
+  FISICA_TACTIL,
+  FOCO_ACCESIBLE,
+  INPUT_BASE,
+  SUBTARJETA,
+} from "../temaSketch";
 import type {
   EventoCalendario,
   NodoTemario,
@@ -27,12 +36,12 @@ const NOMBRES_MESES = [
 
 const DIAS_SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-const ETIQUETA_SEMAFORO: Record<SemaforoPlazo, { texto: string; icono: string; destacado: boolean }> = {
-  completado: { texto: "Completado", icono: "✅", destacado: false },
-  en_curso: { texto: "En curso", icono: "🟢", destacado: true },
-  vence_pronto: { texto: "Vence pronto", icono: "⏳", destacado: true },
-  proximo: { texto: "Próximo", icono: "🗓️", destacado: false },
-  atrasado: { texto: "Atrasado", icono: "⚠️", destacado: true },
+const ETIQUETA_SEMAFORO: Record<SemaforoPlazo, { texto: string; destacado: boolean }> = {
+  completado: { texto: "Completado", destacado: false },
+  en_curso: { texto: "En curso", destacado: true },
+  vence_pronto: { texto: "Vence pronto", destacado: true },
+  proximo: { texto: "Próximo", destacado: false },
+  atrasado: { texto: "Atrasado", destacado: true },
 };
 
 function calcularDiferenciaDias(fechaA: string, fechaB: string): number {
@@ -86,11 +95,11 @@ export function CalendarioTemario({
 }: CalendarioTemarioProps) {
   const [anioInicial, mesInicial] = hoyISO.split("-").map(Number);
   const [anioVista, setAnioVista] = useState<number>(anioInicial || 2026);
-  const [mesVista, setMesVista] = useState<number>((mesInicial || 11) - 1); // 0–11
+  const [mesVista, setMesVista] = useState<number>((mesInicial || 11) - 1);
   const [diaSeleccionadoISO, setDiaSeleccionadoISO] = useState<string>(hoyISO);
+  const [mostrarCronograma, setMostrarCronograma] = useState<boolean>(false);
   const [filtroSemaforo, setFiltroSemaforo] = useState<"todos" | SemaforoPlazo>("todos");
 
-  // Mantener sincronizado cuando hoyISO se hidrata en el cliente
   useEffect(() => {
     const [y, m] = hoyISO.split("-").map(Number);
     if (y && m) {
@@ -100,7 +109,6 @@ export function CalendarioTemario({
     }
   }, [hoyISO]);
 
-  // Construir eventos sincronizados desde nodos y proyectos
   const eventos = useMemo<EventoCalendario[]>(() => {
     const lista: EventoCalendario[] = [];
 
@@ -115,7 +123,7 @@ export function CalendarioTemario({
           fecha: n.fechaInicio,
           tipo: "inicio_nodo",
           titulo: `Inicio: ${n.titulo}`,
-          subtitulo: `${n.unidad} · ${n.tiempoEstimado}`,
+          subtitulo: n.unidad,
           emoji: n.emoji,
           xp: n.xp,
           referenciaId: n.id,
@@ -127,9 +135,9 @@ export function CalendarioTemario({
           id: `lim-${n.id}`,
           fecha: n.fechaLimite,
           tipo: "limite_nodo",
-          titulo: `Meta: ${n.titulo}`,
-          subtitulo: `Cierre de tema · +${n.xp} XP`,
-          emoji: "🏁",
+          titulo: `Límite: ${n.titulo}`,
+          subtitulo: n.tiempoEstimado,
+          emoji: n.emoji,
           xp: n.xp,
           referenciaId: n.id,
           completado: hecho,
@@ -146,8 +154,8 @@ export function CalendarioTemario({
         id: `proy-${p.id}`,
         fecha: p.fechaLimite,
         tipo: "entrega_proyecto",
-        titulo: `Entrega Proyecto: ${p.titulo}`,
-        subtitulo: `${p.entregables.length} entregables · +${p.xpExtra} XP extra`,
+        titulo: p.titulo,
+        subtitulo: `${p.entregables.length} entregables`,
         emoji: p.emoji,
         xp: p.xpExtra,
         referenciaId: p.id,
@@ -168,13 +176,11 @@ export function CalendarioTemario({
     return mapa;
   }, [eventos]);
 
-  // Celdas del mes actual (Lunes = 0 ... Domingo = 6)
   const celdasMes = useMemo(() => {
     const primerDiaSemanaUTC = new Date(Date.UTC(anioVista, mesVista, 1)).getUTCDay();
     const offsetLunes = (primerDiaSemanaUTC + 6) % 7;
     const diasEnMes = new Date(Date.UTC(anioVista, mesVista + 1, 0)).getUTCDate();
 
-    const celdas: { vacia: true; key: string }[] | { vacia: false; iso: string; dia: number }[] = [];
     const resultado: ({ vacia: true; key: string } | { vacia: false; iso: string; dia: number })[] =
       [];
 
@@ -186,7 +192,6 @@ export function CalendarioTemario({
       const dd = String(d).padStart(2, "0");
       resultado.push({ vacia: false, iso: `${anioVista}-${mm}-${dd}`, dia: d });
     }
-    void celdas;
     return resultado;
   }, [anioVista, mesVista]);
 
@@ -210,7 +215,6 @@ export function CalendarioTemario({
   const eventosDelDia = eventosPorFecha[diaSeleccionadoISO] ?? [];
 
   const agendaFiltrada = useMemo(() => {
-    // Mostrar 1 fila consolidada por nodo y por proyecto ordenada por fecha límite
     const filas = [
       ...nodos
         .filter((n) => modoEdicionDocente || n.visible)
@@ -221,10 +225,8 @@ export function CalendarioTemario({
             esProyecto: false,
             emoji: n.emoji,
             titulo: n.titulo,
-            unidad: n.unidad,
             fechaInicio: n.fechaInicio,
             fechaLimite: n.fechaLimite,
-            xp: n.xp,
             semaforo: obtenerSemaforo(n.fechaInicio, n.fechaLimite, hecho, hoyISO),
           };
         }),
@@ -235,11 +237,9 @@ export function CalendarioTemario({
           id: p.id,
           esProyecto: true,
           emoji: p.emoji,
-          titulo: `Proyecto: ${p.titulo}`,
-          unidad: `${p.entregables.length} entregables`,
+          titulo: p.titulo,
           fechaInicio: p.fechaInicio,
           fechaLimite: p.fechaLimite,
-          xp: p.xpExtra,
           semaforo: obtenerSemaforo(p.fechaInicio, p.fechaLimite, hecho, hoyISO),
         };
       }),
@@ -250,13 +250,13 @@ export function CalendarioTemario({
   }, [nodos, proyectos, progreso, hoyISO, modoEdicionDocente, filtroSemaforo]);
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Calendario Mensual Interactivo */}
-        <div className="rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[5px_5px_0px_#123850] lg:col-span-7">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        {/* Calendario Mensual */}
+        <div className={`${SUBTARJETA} p-5 lg:col-span-7`}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-lg font-black uppercase tracking-wide text-[#123850]">
-              📅 {NOMBRES_MESES[mesVista]} {anioVista}
+            <h3 className="text-lg font-black text-[#123850]">
+              {NOMBRES_MESES[mesVista]} {anioVista}
             </h3>
 
             <div className="flex items-center gap-1.5">
@@ -264,14 +264,14 @@ export function CalendarioTemario({
                 type="button"
                 onClick={() => cambiarMes(-1)}
                 aria-label="Mes anterior"
-                className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-xs font-black text-[#123850] shadow-[2px_2px_0px_#123850]"
+                className={`px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
               >
                 ←
               </button>
               <button
                 type="button"
                 onClick={volverAHoy}
-                className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#D69A3F] px-3 py-1 font-mono text-xs font-black text-[#123850] shadow-[2px_2px_0px_#123850]"
+                className={`px-3 py-1 font-mono text-xs font-black ${BOTON_ACENTO}`}
               >
                 Hoy
               </button>
@@ -279,25 +279,23 @@ export function CalendarioTemario({
                 type="button"
                 onClick={() => cambiarMes(1)}
                 aria-label="Mes siguiente"
-                className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-xs font-black text-[#123850] shadow-[2px_2px_0px_#123850]"
+                className={`px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
               >
                 →
               </button>
             </div>
           </div>
 
-          {/* Encabezado Lunes–Domingo */}
-          <div className="mb-2 grid grid-cols-7 gap-1 text-center font-mono text-[11px] font-black text-[#123850]/75">
+          <div className="mb-2 grid grid-cols-7 gap-1 text-center font-mono text-[11px] font-black text-[#123850]/70">
             {DIAS_SEMANA.map((d) => (
               <span key={d}>{d}</span>
             ))}
           </div>
 
-          {/* Cuadrícula de días */}
           <div className="grid grid-cols-7 gap-1.5">
             {celdasMes.map((celda) => {
               if (celda.vacia) {
-                return <div key={celda.key} className="h-14 rounded-xl bg-[#FAF6EC]/40" />;
+                return <div key={celda.key} className="h-13 rounded-xl bg-[#123850]/5" />;
               }
 
               const evs = eventosPorFecha[celda.iso] ?? [];
@@ -314,21 +312,18 @@ export function CalendarioTemario({
                     setDiaSeleccionadoISO(celda.iso);
                   }}
                   aria-pressed={esSeleccionado}
-                  aria-label={`${celda.iso}${esHoy ? " (Hoy)" : ""}, ${evs.length} eventos`}
-                  className={`flex h-14 cursor-pointer flex-col items-center justify-between rounded-xl border-2 p-1.5 transition-transform hover:-translate-y-0.5 ${
+                  aria-label={`${celda.iso}, ${evs.length} eventos`}
+                  className={`flex h-13 flex-col items-center justify-between rounded-xl border-2 p-1.5 ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
                     esSeleccionado
                       ? "border-[#123850] bg-[#D69A3F] text-[#123850] shadow-[2px_2px_0px_#123850]"
                       : esHoy
-                        ? "border-[#123850] bg-[#FAF6EC] text-[#123850] ring-2 ring-[#D69A3F]"
+                        ? "border-[#123850] bg-[#D69A3F]/20 text-[#123850]"
                         : evs.length > 0
                           ? "border-[#123850] bg-[#FEFEFA] text-[#123850]"
-                          : "border-[#123850]/25 bg-[#FEFEFA] text-[#123850]/75"
+                          : "border-[#123850]/30 bg-[#FEFEFA] text-[#123850]/70"
                   }`}
                 >
-                  <span className="font-mono text-xs font-black">
-                    {celda.dia}
-                    {esHoy ? "★" : ""}
-                  </span>
+                  <span className="font-mono text-xs font-black">{celda.dia}</span>
 
                   {evs.length > 0 && (
                     <div className="flex items-center gap-1" aria-hidden="true">
@@ -348,31 +343,21 @@ export function CalendarioTemario({
           </div>
         </div>
 
-        {/* Detalle del Día Seleccionado */}
-        <div className="rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[5px_5px_0px_#123850] lg:col-span-5">
-          <div className="mb-3 flex items-center justify-between gap-2 border-b-2 border-dashed border-[#123850]/25 pb-3">
-            <div>
-              <p className="font-mono text-[11px] font-black uppercase text-[#123850]/70">
-                Hitos programados
-              </p>
-              <h4 className="text-base font-black text-[#123850]">
-                📌 {diaSeleccionadoISO} {diaSeleccionadoISO === hoyISO ? "(Hoy)" : ""}
-              </h4>
-            </div>
-            <span className="rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-2.5 py-0.5 font-mono text-xs font-black text-[#123850]">
-              {eventosDelDia.length} {eventosDelDia.length === 1 ? "hito" : "hitos"}
+        {/* Hitos del día elegido */}
+        <div className={`${SUBTARJETA} p-5 lg:col-span-5`}>
+          <div className="mb-3 flex items-center justify-between border-b-2 border-dashed border-[#123850]/30 pb-3">
+            <h4 className="font-mono text-sm font-black text-[#123850]">
+              {diaSeleccionadoISO} {diaSeleccionadoISO === hoyISO ? "· Hoy" : ""}
+            </h4>
+            <span className="font-mono text-xs font-bold text-[#123850]/70">
+              {eventosDelDia.length}
             </span>
           </div>
 
           {eventosDelDia.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-[#123850]/35 bg-[#FAF6EC] p-6 text-center">
-              <p className="text-2xl" aria-hidden="true">
-                ☕
-              </p>
-              <p className="mt-1 text-xs font-bold text-[#123850]/80">
-                Sin cierres ni aperturas en esta fecha. Toca cualquier día marcado en el calendario.
-              </p>
-            </div>
+            <p className="py-8 text-center font-mono text-xs font-bold text-[#123850]/70">
+              Sin entregas programadas
+            </p>
           ) : (
             <ul className="space-y-2.5">
               {eventosDelDia.map((ev) => {
@@ -380,41 +365,28 @@ export function CalendarioTemario({
                 return (
                   <li
                     key={ev.id}
-                    className="rounded-xl border-2 border-[#123850] bg-[#FAF6EC] p-3 shadow-[2px_2px_0px_#123850]"
+                    className="flex items-center justify-between gap-3 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] p-3"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-xs font-black text-[#123850]">
-                          {ev.emoji} {ev.titulo}
-                        </p>
-                        <p className="mt-0.5 font-mono text-[11px] font-bold text-[#123850]/75">
-                          {ev.subtitulo}
-                        </p>
-                      </div>
-                      <span className="shrink-0 rounded-full border border-[#123850] bg-[#D69A3F] px-2 py-0.5 font-mono text-[10px] font-black text-[#123850]">
-                        +{ev.xp} XP
-                      </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-black text-[#123850]">
+                        {ev.emoji} {ev.titulo}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] font-bold text-[#123850]/70">
+                        {infoSem.texto}
+                      </p>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between gap-2">
-                      <span className="font-mono text-[10px] font-black text-[#123850]">
-                        {infoSem.icono} {infoSem.texto}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          playPop();
-                          if (ev.tipo === "entrega_proyecto") {
-                            onIrAProyecto(ev.referenciaId);
-                          } else {
-                            onIrANodo(ev.referenciaId);
-                          }
-                        }}
-                        className="cursor-pointer rounded-full border border-[#123850] bg-[#FEFEFA] px-2.5 py-0.5 font-mono text-[10px] font-black text-[#123850]"
-                      >
-                        Abrir →
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playPop();
+                        if (ev.tipo === "entrega_proyecto") onIrAProyecto(ev.referenciaId);
+                        else onIrANodo(ev.referenciaId);
+                      }}
+                      className={`shrink-0 px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
+                    >
+                      Ver →
+                    </button>
                   </li>
                 );
               })}
@@ -423,133 +395,147 @@ export function CalendarioTemario({
         </div>
       </div>
 
-      {/* Cronograma / Agenda por Tiempos con Semáforo Automático y Edición Rápida Docente */}
-      <section className="rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[5px_5px_0px_#123850]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-lg font-black text-[#123850]">
-              ⏱️ Cronograma de Temarios y Entregas por Tiempos
-            </h3>
-            <p className="text-xs font-bold text-[#123850]/75">
-              {modoEdicionDocente
-                ? "Ajusta cualquier fecha aquí y el calendario mensual se actualizará al instante."
-                : "Semáforo automático calculado frente a la fecha actual."}
-            </p>
-          </div>
+      {/* Cronograma completo contraíble (cerrado por defecto) */}
+      <section className={`${SUBTARJETA} overflow-hidden`}>
+        <button
+          type="button"
+          onClick={() => {
+            const siguiente = !mostrarCronograma;
+            playToggle(siguiente);
+            setMostrarCronograma(siguiente);
+          }}
+          aria-expanded={mostrarCronograma}
+          className={`flex w-full cursor-pointer items-center justify-between gap-3 px-5 py-3.5 text-left ${FOCO_ACCESIBLE}`}
+        >
+          <span className="text-base font-black text-[#123850]">
+            ⏱️ Cronograma por plazos ({agendaFiltrada.length})
+          </span>
+          <span className="font-mono text-xs font-black text-[#123850]/70">
+            {mostrarCronograma ? "Ocultar ▲" : "Desplegar ▼"}
+          </span>
+        </button>
 
-          <div className="flex flex-wrap gap-1.5">
-            {(
-              [
-                { id: "todos", label: "Todos" },
-                { id: "en_curso", label: "🟢 En curso" },
-                { id: "vence_pronto", label: "⏳ Vence pronto" },
-                { id: "proximo", label: "🗓️ Próximos" },
-                { id: "completado", label: "✅ Completados" },
-              ] as { id: "todos" | SemaforoPlazo; label: string }[]
-            ).map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => {
-                  playPop();
-                  setFiltroSemaforo(f.id);
-                }}
-                aria-pressed={filtroSemaforo === f.id}
-                className={`cursor-pointer rounded-full border-2 border-[#123850] px-2.5 py-0.5 font-mono text-[11px] font-extrabold ${
-                  filtroSemaforo === f.id
-                    ? "bg-[#123850] text-[#FEFEFA]"
-                    : "bg-[#FAF6EC] text-[#123850]"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {mostrarCronograma && (
+          <div className="space-y-4 border-t-2 border-dashed border-[#123850]/30 p-5">
+            <div className="flex flex-wrap gap-1.5">
+              {(
+                [
+                  { id: "todos", label: "Todos" },
+                  { id: "en_curso", label: "En curso" },
+                  { id: "vence_pronto", label: "Vence pronto" },
+                  { id: "proximo", label: "Próximos" },
+                  { id: "completado", label: "Completados" },
+                ] as { id: "todos" | SemaforoPlazo; label: string }[]
+              ).map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => {
+                    playPop();
+                    setFiltroSemaforo(f.id);
+                  }}
+                  aria-pressed={filtroSemaforo === f.id}
+                  className={`px-3 py-1 font-mono text-xs font-black ${
+                    filtroSemaforo === f.id ? BOTON_OSCURO : BOTON_CLARO
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
 
-        <div className="space-y-2.5">
-          {agendaFiltrada.map((item) => {
-            const sem = ETIQUETA_SEMAFORO[item.semaforo];
-            return (
-              <div
-                key={`${item.esProyecto ? "p" : "n"}-${item.id}`}
-                className="flex flex-col justify-between gap-3 rounded-xl border-2 border-[#123850] bg-[#FAF6EC] p-3.5 sm:flex-row sm:items-center"
-              >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full border border-[#123850] px-2 py-0.5 font-mono text-[10px] font-black ${
-                        sem.destacado ? "bg-[#D69A3F] text-[#123850]" : "bg-[#FEFEFA] text-[#123850]"
-                      }`}
-                    >
-                      {sem.icono} {sem.texto}
-                    </span>
-                    <span className="font-mono text-[11px] font-bold text-[#123850]/70">
-                      {item.unidad}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm font-black text-[#123850]">
-                    {item.emoji} {item.titulo}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {modoEdicionDocente ? (
-                    <>
-                      <input
-                        type="date"
-                        aria-label={`Inicio de ${item.titulo}`}
-                        value={item.fechaInicio}
-                        onChange={(e) => {
-                          if (item.esProyecto) {
-                            onActualizarFechasProyectoDocente(item.id, e.target.value, item.fechaLimite);
-                          } else {
-                            onActualizarFechasNodoDocente(item.id, e.target.value, item.fechaLimite);
-                          }
-                        }}
-                        className="rounded-lg border-2 border-[#123850] bg-[#FEFEFA] px-2 py-1 font-mono text-xs font-bold text-[#123850]"
-                      />
-                      <span className="font-mono text-xs font-black">→</span>
-                      <input
-                        type="date"
-                        aria-label={`Fecha límite de ${item.titulo}`}
-                        value={item.fechaLimite}
-                        onChange={(e) => {
-                          if (item.esProyecto) {
-                            onActualizarFechasProyectoDocente(item.id, item.fechaInicio, e.target.value);
-                          } else {
-                            onActualizarFechasNodoDocente(item.id, item.fechaInicio, e.target.value);
-                          }
-                        }}
-                        className="rounded-lg border-2 border-[#123850] bg-[#FEFEFA] px-2 py-1 font-mono text-xs font-bold text-[#123850]"
-                      />
-                    </>
-                  ) : (
-                    <span className="rounded-lg border border-[#123850]/40 bg-[#FEFEFA] px-2.5 py-1 font-mono text-xs font-bold text-[#123850]">
-                      {item.fechaInicio} → {item.fechaLimite}
-                    </span>
-                  )}
-
-                  <span className="rounded-full border-2 border-[#123850] bg-[#D69A3F] px-2.5 py-0.5 font-mono text-xs font-black text-[#123850]">
-                    +{item.xp} XP
-                  </span>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playPop();
-                      if (item.esProyecto) onIrAProyecto(item.id);
-                      else onIrANodo(item.id);
-                    }}
-                    className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#123850] px-3 py-1 font-mono text-xs font-extrabold text-[#FEFEFA]"
+            <div className="space-y-2.5">
+              {agendaFiltrada.map((item) => {
+                const sem = ETIQUETA_SEMAFORO[item.semaforo];
+                return (
+                  <div
+                    key={`${item.esProyecto ? "p" : "n"}-${item.id}`}
+                    className="flex flex-col justify-between gap-3 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] p-3.5 sm:flex-row sm:items-center"
                   >
-                    Ir →
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded-lg border border-[#123850] px-2 py-0.5 font-mono text-[10px] font-black ${
+                          sem.destacado ? "bg-[#D69A3F]" : "bg-[#123850]/10"
+                        }`}
+                      >
+                        {sem.texto}
+                      </span>
+                      <span className="text-sm font-black text-[#123850]">
+                        {item.emoji} {item.titulo}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      {modoEdicionDocente ? (
+                        <>
+                          <input
+                            type="date"
+                            aria-label={`Inicio ${item.titulo}`}
+                            value={item.fechaInicio}
+                            onChange={(e) => {
+                              if (item.esProyecto) {
+                                onActualizarFechasProyectoDocente(
+                                  item.id,
+                                  e.target.value,
+                                  item.fechaLimite
+                                );
+                              } else {
+                                onActualizarFechasNodoDocente(
+                                  item.id,
+                                  e.target.value,
+                                  item.fechaLimite
+                                );
+                              }
+                            }}
+                            className={`font-mono text-xs ${INPUT_BASE}`}
+                          />
+                          <span className="font-mono text-xs font-black">→</span>
+                          <input
+                            type="date"
+                            aria-label={`Límite ${item.titulo}`}
+                            value={item.fechaLimite}
+                            onChange={(e) => {
+                              if (item.esProyecto) {
+                                onActualizarFechasProyectoDocente(
+                                  item.id,
+                                  item.fechaInicio,
+                                  e.target.value
+                                );
+                              } else {
+                                onActualizarFechasNodoDocente(
+                                  item.id,
+                                  item.fechaInicio,
+                                  e.target.value
+                                );
+                              }
+                            }}
+                            className={`font-mono text-xs ${INPUT_BASE}`}
+                          />
+                        </>
+                      ) : (
+                        <span className="font-mono text-xs font-bold text-[#123850]/70">
+                          {item.fechaInicio} → {item.fechaLimite}
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playPop();
+                          if (item.esProyecto) onIrAProyecto(item.id);
+                          else onIrANodo(item.id);
+                        }}
+                        className={`px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
+                      >
+                        Ir →
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

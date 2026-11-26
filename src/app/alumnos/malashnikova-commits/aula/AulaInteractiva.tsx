@@ -2,6 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { playLevelUp, playPop, playToggle } from "../sonidos";
+import {
+  BOTON_ACENTO,
+  BOTON_CLARO,
+  BOTON_OSCURO,
+  ESTILO_LIBRETA,
+  INPUT_BASE,
+  PANEL_PRINCIPAL,
+  SUBTARJETA,
+} from "../temaSketch";
 import { AccesoRol } from "./AccesoRol";
 import { CalendarioTemario } from "./CalendarioTemario";
 import { CarpetasProyectos } from "./CarpetasProyectos";
@@ -30,7 +39,6 @@ import type {
 type PestanaAula = "mapa" | "calendario" | "carpetas";
 
 export function AulaInteractiva() {
-  // Inicialización determinista segura para SSR (sin acceder a window ni new Date() en render inicial)
   const [hoyISO, setHoyISO] = useState<string>(FECHA_SEMILLA_SSR);
   const [curso, setCurso] = useState<ConfiguracionCurso>(() =>
     crearCursoInicial(FECHA_SEMILLA_SSR)
@@ -43,16 +51,18 @@ export function AulaInteractiva() {
   const [docenteAutenticado, setDocenteAutenticado] = useState<boolean>(false);
   const [vistaPreviaAlumno, setVistaPreviaAlumno] = useState<boolean>(false);
   const [panelAccesoAbierto, setPanelAccesoAbierto] = useState<boolean>(false);
+  const [ajustesAbiertos, setAjustesAbiertos] = useState<boolean>(false);
+  const [nuevoPinDocente, setNuevoPinDocente] = useState<string>("");
 
   const [pestanaActiva, setPestanaActiva] = useState<PestanaAula>("mapa");
-  const [nodoSeleccionadoId, setNodoSeleccionadoId] = useState<string | null>("nodo-3-nextjs");
+  // Cerrado por defecto para mantener el mapa despejado hasta hacer clic
+  const [nodoSeleccionadoId, setNodoSeleccionadoId] = useState<string | null>(null);
   const [carpetaActivaId, setCarpetaActivaId] = useState<string | null>(null);
   const [proyectoDestacadoId, setProyectoDestacadoId] = useState<string | null>(null);
   const [avisoSistema, setAvisoSistema] = useState<string | null>(null);
 
   const inputImportarRef = useRef<HTMLInputElement | null>(null);
 
-  // Hidratación cliente: sincronizar fecha real y localStorage una sola vez al montar
   useEffect(() => {
     const hoyReal = formatearFechaLocalHoy(new Date());
     setHoyISO(hoyReal);
@@ -60,7 +70,6 @@ export function AulaInteractiva() {
     const cursoGuardado = aulaStorageLocal.cargarCurso(hoyReal);
     const progresoGuardado = aulaStorageLocal.cargarProgreso(hoyReal);
 
-    // Actualizar racha si cambió el día
     if (progresoGuardado.ultimaFechaISO !== hoyReal) {
       const actualizado: ProgresoAlumno = {
         ...progresoGuardado,
@@ -80,7 +89,7 @@ export function AulaInteractiva() {
     setAvisoSistema(texto);
     window.setTimeout(() => {
       setAvisoSistema((actual) => (actual === texto ? null : actual));
-    }, 3200);
+    }, 2500);
   };
 
   const actualizarCurso = (nuevoCurso: ConfiguracionCurso) => {
@@ -96,7 +105,6 @@ export function AulaInteractiva() {
   const modoEdicionDocente =
     rolActual === "docente" && docenteAutenticado && !vistaPreviaAlumno;
 
-  // Cálculo sincronizado de puntos XP y avance global
   const estadisticasXP = useMemo(() => {
     const nodosVisibles = curso.nodos.filter((n) => n.visible);
     const xpTotalNodos = nodosVisibles.reduce((acc, n) => acc + n.xp, 0);
@@ -116,20 +124,10 @@ export function AulaInteractiva() {
 
     const xpGanado = xpGanadoNodos + xpGanadoProyectos;
     const porcentaje = Math.min(100, Math.round((xpGanado / xpTotalCurso) * 100));
-    const nodosHechos = nodosVisibles.filter((n) =>
-      progreso.nodosCompletados.includes(n.id)
-    ).length;
 
-    return {
-      xpGanado,
-      xpTotalCurso,
-      porcentaje,
-      nodosHechos,
-      totalNodosVisibles: nodosVisibles.length,
-    };
+    return { xpGanado, xpTotalCurso, porcentaje };
   }, [curso, progreso]);
 
-  // Acciones de Alumnado
   const alternarPasoChecklist = (nodoId: string, pasoId: string) => {
     const actuales = progreso.checklistMarcados[nodoId] ?? [];
     const existe = actuales.includes(pasoId);
@@ -137,10 +135,7 @@ export function AulaInteractiva() {
 
     actualizarProgreso({
       ...progreso,
-      checklistMarcados: {
-        ...progreso.checklistMarcados,
-        [nodoId]: siguientes,
-      },
+      checklistMarcados: { ...progreso.checklistMarcados, [nodoId]: siguientes },
     });
   };
 
@@ -160,12 +155,9 @@ export function AulaInteractiva() {
       actualizarProgreso({
         ...progreso,
         nodosCompletados: [...progreso.nodosCompletados, nodoId],
-        checklistMarcados: {
-          ...progreso.checklistMarcados,
-          [nodoId]: todosPasos,
-        },
+        checklistMarcados: { ...progreso.checklistMarcados, [nodoId]: todosPasos },
       });
-      if (nodo) mostrarAviso(`🎉 ¡Completaste "${nodo.titulo}" (+${nodo.xp} XP)!`);
+      if (nodo) mostrarAviso(`+${nodo.xp} XP · ${nodo.titulo}`);
     } else if (!completar && yaEstaba) {
       actualizarProgreso({
         ...progreso,
@@ -195,25 +187,20 @@ export function AulaInteractiva() {
 
     actualizarProgreso({
       ...progreso,
-      entregablesMarcados: {
-        ...progreso.entregablesMarcados,
-        [proyectoId]: siguientes,
-      },
+      entregablesMarcados: { ...progreso.entregablesMarcados, [proyectoId]: siguientes },
     });
 
     if (!existe && siguientes.length >= totalEntregables) {
       const proy = curso.proyectos.find((p) => p.id === proyectoId);
-      if (proy) mostrarAviso(`🚀 ¡Proyecto "${proy.titulo}" acreditado (+${proy.xpExtra} XP)!`);
+      if (proy) mostrarAviso(`+${proy.xpExtra} XP · ${proy.titulo}`);
     }
   };
 
-  // Acciones de Profesorado (Docente)
   const guardarNodoDocente = (nodoEditado: NodoTemario, esNuevo: boolean) => {
     const nuevosNodos = esNuevo
       ? [...curso.nodos, nodoEditado]
       : curso.nodos.map((n) => (n.id === nodoEditado.id ? nodoEditado : n));
 
-    // Sincronizar también carpetasIds bidireccionalmente
     const carpetasSincronizadas = curso.carpetas.map((c) => {
       const debeEstar = nodoEditado.carpetasIds.includes(c.id);
       const yaEsta = c.nodoIds.includes(nodoEditado.id);
@@ -224,12 +211,8 @@ export function AulaInteractiva() {
       return c;
     });
 
-    actualizarCurso({
-      ...curso,
-      nodos: nuevosNodos,
-      carpetas: carpetasSincronizadas,
-    });
-    mostrarAviso(esNuevo ? "✨ Nuevo nodo añadido a la ruta." : "✓ Nodo actualizado.");
+    actualizarCurso({ ...curso, nodos: nuevosNodos, carpetas: carpetasSincronizadas });
+    mostrarAviso("Nodo guardado");
   };
 
   const eliminarNodoDocente = (nodoId: string) => {
@@ -241,7 +224,7 @@ export function AulaInteractiva() {
         prerequisitoId: n.prerequisitoId === nodoId ? null : n.prerequisitoId,
       }));
     actualizarCurso({ ...curso, nodos: restantes });
-    mostrarAviso("🗑️ Nodo eliminado del temario.");
+    if (nodoSeleccionadoId === nodoId) setNodoSeleccionadoId(null);
   };
 
   const moverNodoDocente = (nodoId: string, direccion: -1 | 1) => {
@@ -253,9 +236,7 @@ export function AulaInteractiva() {
     const copia = [...ordenados];
     const [extraido] = copia.splice(idx, 1);
     copia.splice(destino, 0, extraido);
-
-    const reenumerados = copia.map((n, i) => ({ ...n, orden: i + 1 }));
-    actualizarCurso({ ...curso, nodos: reenumerados });
+    actualizarCurso({ ...curso, nodos: copia.map((n, i) => ({ ...n, orden: i + 1 })) });
   };
 
   const actualizarFechasNodoDocente = (
@@ -286,7 +267,7 @@ export function AulaInteractiva() {
 
   const crearCarpetaDocente = (nueva: CarpetaFuentes) => {
     actualizarCurso({ ...curso, carpetas: [...curso.carpetas, nueva] });
-    mostrarAviso(`📂 Carpeta "${nueva.nombre}" creada.`);
+    mostrarAviso("Carpeta creada");
   };
 
   const eliminarCarpetaDocente = (carpetaId: string) => {
@@ -352,7 +333,7 @@ export function AulaInteractiva() {
         ? [...curso.proyectos, proy]
         : curso.proyectos.map((p) => (p.id === proy.id ? proy : p)),
     });
-    mostrarAviso(esNuevo ? "🚀 Nuevo proyecto creado." : "✓ Proyecto actualizado.");
+    mostrarAviso("Proyecto guardado");
   };
 
   const eliminarProyectoDocente = (proyectoId: string) => {
@@ -365,7 +346,6 @@ export function AulaInteractiva() {
     });
   };
 
-  // Importar / Exportar / Restablecer JSON
   const manejarImportacionArchivo = (e: React.ChangeEvent<HTMLInputElement>) => {
     const archivo = e.target.files?.[0];
     if (!archivo) return;
@@ -377,103 +357,117 @@ export function AulaInteractiva() {
       if (validacion.ok) {
         playLevelUp(100);
         actualizarCurso(validacion.curso);
-        mostrarAviso(`✅ Temario "${validacion.curso.nombreCurso}" importado con éxito.`);
+        mostrarAviso("Temario importado");
       } else {
         playToggle(false);
-        mostrarAviso(`⚠ Error al importar: ${validacion.error}`);
+        mostrarAviso(validacion.error);
       }
       e.target.value = "";
     };
     lector.readAsText(archivo);
   };
 
-  const restablecerDatos = () => {
-    playToggle(false);
-    const { curso: c, progreso: p } = aulaStorageLocal.restablecerFabrica(hoyISO);
-    setCurso(c);
-    setProgreso(p);
-    mostrarAviso("↺ Datos de fábrica del aula restaurados.");
+  const guardarPinDocente = (e: React.FormEvent) => {
+    e.preventDefault();
+    const limpio = nuevoPinDocente.trim();
+    if (limpio.length < 4) return;
+    playPop();
+    actualizarCurso({ ...curso, pinDocente: limpio });
+    setNuevoPinDocente("");
+    mostrarAviso("PIN actualizado");
   };
 
   return (
     <section
-      aria-label="Plataforma interactiva de Aula"
-      className="mt-10 rounded-3xl border-[3px] border-[#123850] bg-[#FEFEFA] p-5 text-[#123850] shadow-[8px_8px_0px_#123850] sm:p-7"
-      style={{
-        backgroundImage: "radial-gradient(rgba(18,56,80,0.14) 1.3px, transparent 1.3px)",
-        backgroundSize: "18px 18px",
-      }}
+      aria-label="Plataforma de Aula"
+      className={`${PANEL_PRINCIPAL} p-6 sm:p-7`}
+      style={ESTILO_LIBRETA}
     >
-      {/* Cinta superior e insignia del módulo */}
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4 border-b-2 border-dashed border-[#123850]/30 pb-5">
-        <div>
-          <span className="inline-block -rotate-1 rounded-full border-2 border-[#123850] bg-[#D69A3F] px-3 py-0.5 font-mono text-[11px] font-black uppercase tracking-wider text-[#123850] shadow-[2px_2px_0px_#123850]">
-            🎓 Plataforma de Aula · Sketchbook LMS
-          </span>
-          <h2 className="mt-2 text-2xl font-black uppercase tracking-tight text-[#123850] sm:text-3xl">
+      {/* Barra superior única: Título, XP sincronizado, Rol y Ajustes contraíbles */}
+      <header className="mb-5 space-y-4 border-b-2 border-dashed border-[#123850]/30 pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-black tracking-tight text-[#123850] sm:text-2xl">
             {curso.nombreCurso}
           </h2>
-          <p className="mt-0.5 text-xs font-bold text-[#123850]/75 sm:text-sm">
-            {curso.subtitulo}
-          </p>
-        </div>
 
-        {/* Botones de Rol, Vista Previa y JSON */}
-        <div className="flex flex-wrap items-center gap-2">
-          {docenteAutenticado && (
+          <div className="flex flex-wrap items-center gap-2">
+            {docenteAutenticado && (
+              <button
+                type="button"
+                onClick={() => {
+                  playToggle(!vistaPreviaAlumno);
+                  setVistaPreviaAlumno((prev) => !prev);
+                }}
+                aria-pressed={vistaPreviaAlumno}
+                className={`px-3 py-1.5 font-mono text-xs font-black ${
+                  vistaPreviaAlumno ? BOTON_ACENTO : BOTON_CLARO
+                }`}
+              >
+                {vistaPreviaAlumno ? "✏️ Editar" : "👁️ Vista Alumno"}
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => {
-                playToggle(!vistaPreviaAlumno);
-                setVistaPreviaAlumno((prev) => !prev);
+                const sig = !panelAccesoAbierto;
+                playToggle(sig);
+                setPanelAccesoAbierto(sig);
               }}
-              aria-pressed={vistaPreviaAlumno}
-              className={`cursor-pointer rounded-full border-2 border-[#123850] px-3 py-1.5 font-mono text-xs font-black shadow-[2px_2px_0px_#123850] ${
-                vistaPreviaAlumno ? "bg-[#D69A3F] text-[#123850]" : "bg-[#FEFEFA] text-[#123850]"
+              aria-expanded={panelAccesoAbierto}
+              className={`px-3.5 py-1.5 font-mono text-xs font-black ${
+                modoEdicionDocente ? BOTON_ACENTO : BOTON_OSCURO
               }`}
             >
-              {vistaPreviaAlumno ? "✏️ Volver a Editar" : "👁️ Vista Alumnado"}
+              {modoEdicionDocente
+                ? "🔑 Docente"
+                : `${progreso.avatar} ${progreso.alias}`}
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={() => {
-              playPop();
-              setPanelAccesoAbierto((prev) => !prev);
-            }}
-            aria-expanded={panelAccesoAbierto}
-            className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#123850] px-3.5 py-1.5 font-mono text-xs font-black text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F] transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
-          >
-            {modoEdicionDocente
-              ? "🎓 Rol: Docente (Editar)"
-              : vistaPreviaAlumno
-                ? "👁️ Docente (Vista Alumno)"
-                : `🎒 ${progreso.avatar} ${progreso.alias} · Cambiar Rol`}
-          </button>
+            <button
+              type="button"
+              onClick={() => {
+                const sig = !ajustesAbiertos;
+                playToggle(sig);
+                setAjustesAbiertos(sig);
+              }}
+              aria-expanded={ajustesAbiertos}
+              aria-label="Ajustes del curso"
+              className={`px-3 py-1.5 font-mono text-xs font-black ${
+                ajustesAbiertos ? BOTON_OSCURO : BOTON_CLARO
+              }`}
+            >
+              ⚙️ Ajustes
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Notificación de estado del aula */}
-      {avisoSistema && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mb-4 flex items-center justify-between gap-2 rounded-2xl border-2 border-[#123850] bg-[#D69A3F] px-4 py-2 font-mono text-xs font-black text-[#123850] shadow-[3px_3px_0px_#123850]"
-        >
-          <span>{avisoSistema}</span>
-          <button
-            type="button"
-            onClick={() => setAvisoSistema(null)}
-            aria-label="Cerrar notificación"
-            className="cursor-pointer rounded-full border border-[#123850] bg-[#FEFEFA] px-2 py-0.5 text-[10px]"
+        {/* Métricas consolidadas en un solo lugar limpio */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-xs font-black text-[#123850]">
+            <span>
+              ⚡ {estadisticasXP.xpGanado}/{estadisticasXP.xpTotalCurso} XP · 🔥 {progreso.rachaDias}d
+            </span>
+            <span>{estadisticasXP.porcentaje}%</span>
+          </div>
+
+          <div
+            className="h-3.5 w-full overflow-hidden rounded-full border-2 border-[#123850] bg-[#123850]/10 p-0.5"
+            role="progressbar"
+            aria-valuenow={estadisticasXP.porcentaje}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Avance global del curso"
           >
-            ✕
-          </button>
+            <div
+              className="h-full rounded-full bg-[#D69A3F] transition-all duration-300 ease-out motion-reduce:transition-none"
+              style={{ width: `${estadisticasXP.porcentaje}%` }}
+            />
+          </div>
         </div>
-      )}
+      </header>
 
-      {/* Panel desplegable de Acceso Alumnado / Profesorado */}
+      {/* Panel contraíble de Acceso Rol (cerrado por defecto) */}
       <AccesoRol
         rolActual={rolActual}
         docenteAutenticado={docenteAutenticado}
@@ -497,34 +491,24 @@ export function AulaInteractiva() {
           setRolActual("alumnado");
         }}
         onAlternarVistaPrevia={() => setVistaPreviaAlumno((prev) => !prev)}
-        onCambiarPinDocente={(nuevoPin) => actualizarCurso({ ...curso, pinDocente: nuevoPin })}
       />
 
-      {/* Barra sincronizada de Puntos XP, Avance Global, Nodos y Racha + JSON */}
-      <div className="mb-6 rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-4 shadow-[4px_4px_0px_#123850]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-[#123850] bg-[#D69A3F] px-3 py-1 font-mono text-xs font-black text-[#123850]">
-              ⚡ {estadisticasXP.xpGanado} / {estadisticasXP.xpTotalCurso} XP
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-1 font-mono text-xs font-black text-[#123850]">
-              ✅ {estadisticasXP.nodosHechos}/{estadisticasXP.totalNodosVisibles} nodos
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-1 font-mono text-xs font-black text-[#123850]">
-              🔥 Racha: {progreso.rachaDias}d
-            </span>
-          </div>
-
-          {/* Exportar / Importar JSON del temario + Restablecer */}
-          <div className="flex flex-wrap items-center gap-1.5">
+      {/* Panel contraíble de Ajustes secundarios (JSON, fábrica y PIN docente) */}
+      {ajustesAbiertos && (
+        <div
+          role="region"
+          aria-label="Ajustes del curso"
+          className={`${SUBTARJETA} mb-5 space-y-3 p-4`}
+        >
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => {
                 playPop();
                 descargarCursoComoJSON(curso);
-                mostrarAviso("⬇ Archivo aula-temario-sketchbook.json descargado.");
+                mostrarAviso("JSON exportado");
               }}
-              className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-[11px] font-black text-[#123850] hover:bg-[#FAF6EC]"
+              className={`px-3 py-1.5 font-mono text-xs font-black ${BOTON_CLARO}`}
             >
               ⬇ Exportar JSON
             </button>
@@ -535,7 +519,7 @@ export function AulaInteractiva() {
                 playPop();
                 inputImportarRef.current?.click();
               }}
-              className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-[11px] font-black text-[#123850] hover:bg-[#FAF6EC]"
+              className={`px-3 py-1.5 font-mono text-xs font-black ${BOTON_CLARO}`}
             >
               ⬆ Importar JSON
             </button>
@@ -549,52 +533,57 @@ export function AulaInteractiva() {
 
             <button
               type="button"
-              onClick={restablecerDatos}
-              title="Restablecer temario y progreso de fábrica"
-              className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-2.5 py-1 font-mono text-[11px] font-black text-[#123850]"
+              onClick={() => {
+                playToggle(false);
+                const { curso: c, progreso: p } = aulaStorageLocal.restablecerFabrica(hoyISO);
+                setCurso(c);
+                setProgreso(p);
+                mostrarAviso("Datos restaurados");
+              }}
+              className={`px-3 py-1.5 font-mono text-xs font-black ${BOTON_CLARO}`}
             >
-              ↺ Fábrica
+              ↺ Restablecer
             </button>
           </div>
-        </div>
 
-        {/* Barra maestra de progreso global del curso */}
-        <div className="mt-3">
-          <div className="mb-1 flex justify-between font-mono text-[11px] font-black text-[#123850]/80">
-            <span>Avance global sincronizado (nodos + proyectos)</span>
-            <span>{estadisticasXP.porcentaje}%</span>
-          </div>
-          <div
-            className="h-4 w-full overflow-hidden rounded-full border-2 border-[#123850] bg-[#FEFEFA] p-0.5"
-            role="progressbar"
-            aria-valuenow={estadisticasXP.porcentaje}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Porcentaje de avance global del curso"
-          >
-            <div
-              className="h-full rounded-full transition-all duration-300 motion-reduce:transition-none"
-              style={{
-                width: `${estadisticasXP.porcentaje}%`,
-                background:
-                  "repeating-linear-gradient(-55deg, #123850, #123850 5px, #2b5470 5px, #2b5470 8px)",
-              }}
-            />
-          </div>
+          {docenteAutenticado && (
+            <form onSubmit={guardarPinDocente} className="flex flex-wrap items-center gap-2 pt-1">
+              <input
+                type="text"
+                minLength={4}
+                maxLength={24}
+                value={nuevoPinDocente}
+                onChange={(e) => setNuevoPinDocente(e.target.value)}
+                placeholder="Nuevo PIN docente…"
+                className={`font-mono text-xs ${INPUT_BASE}`}
+              />
+              <button type="submit" className={`px-3.5 py-1.5 font-mono text-xs font-black ${BOTON_ACENTO}`}>
+                Cambiar PIN
+              </button>
+            </form>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* Pestañas principales del Aula */}
-      <nav
-        aria-label="Secciones del Aula Interactiva"
-        className="mb-6 flex flex-wrap gap-2.5"
-      >
+      {/* Notificación fugaz discreta */}
+      {avisoSistema && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mb-4 inline-flex items-center gap-2 rounded-xl border-2 border-[#123850] bg-[#D69A3F] px-3.5 py-1.5 font-mono text-xs font-black text-[#123850] shadow-[3px_3px_0px_#123850]"
+        >
+          <span>{avisoSistema}</span>
+        </div>
+      )}
+
+      {/* Pestañas limpias del Aula */}
+      <nav aria-label="Vistas del Aula" className="mb-6 flex flex-wrap gap-2">
         {(
           [
-            { id: "mapa", icono: "🗺️", texto: "Mapa de Nodos" },
-            { id: "calendario", icono: "📅", texto: "Calendario y Tiempos" },
-            { id: "carpetas", icono: "📂", texto: "Fuentes y Proyectos" },
-          ] as { id: PestanaAula; icono: string; texto: string }[]
+            { id: "mapa", texto: "🗺️ Ruta" },
+            { id: "calendario", texto: "📅 Calendario" },
+            { id: "carpetas", texto: "📂 Fuentes y Proyectos" },
+          ] as { id: PestanaAula; texto: string }[]
         ).map((tab) => {
           const activa = pestanaActiva === tab.id;
           return (
@@ -606,20 +595,16 @@ export function AulaInteractiva() {
                 setPestanaActiva(tab.id);
               }}
               aria-pressed={activa}
-              className={`flex cursor-pointer items-center gap-2 rounded-2xl border-[2.5px] border-[#123850] px-4 py-2 font-mono text-xs font-black transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transition-none sm:text-sm ${
-                activa
-                  ? "bg-[#D69A3F] text-[#123850] shadow-[3px_3px_0px_#123850]"
-                  : "bg-[#FEFEFA] text-[#123850] shadow-[3px_3px_0px_#123850]"
+              className={`px-4 py-1.5 font-mono text-xs font-black ${
+                activa ? BOTON_ACENTO : BOTON_CLARO
               }`}
             >
-              <span aria-hidden="true">{tab.icono}</span>
-              <span>{tab.texto}</span>
+              {tab.texto}
             </button>
           );
         })}
       </nav>
 
-      {/* Contenido de la pestaña seleccionada */}
       {pestanaActiva === "mapa" && (
         <MapaNodos
           nodos={curso.nodos}

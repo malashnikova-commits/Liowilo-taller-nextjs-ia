@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { playHoverTick, playPop, playToggle } from "./sonidos";
+import { FISICA_TACTIL, FOCO_ACCESIBLE, PANEL_PRINCIPAL } from "./temaSketch";
 
 interface Reaccion {
   id: string;
@@ -11,9 +12,9 @@ interface Reaccion {
 }
 
 const REACCIONES_INICIALES: Reaccion[] = [
-  { id: "alien", emoji: "👽", etiqueta: "Out of this world", votos: 3 },
-  { id: "fuego", emoji: "🔥", etiqueta: "Puro flow", votos: 5 },
-  { id: "flor", emoji: "🌼", etiqueta: "Buena vibra", votos: 4 },
+  { id: "alien", emoji: "👽", etiqueta: "Genial", votos: 3 },
+  { id: "fuego", emoji: "🔥", etiqueta: "Flow", votos: 5 },
+  { id: "flor", emoji: "🌼", etiqueta: "Vibra", votos: 4 },
 ];
 
 export function Reacciones() {
@@ -39,46 +40,28 @@ export function Reacciones() {
 
   return (
     <section
-      aria-label="Reacciones interactivas con sonido"
-      className={`mt-10 rounded-2xl border-[3px] p-6 transition-colors motion-reduce:transition-none ${
+      aria-label="Reacciones"
+      className={`rounded-3xl border-[3px] p-6 transition-colors motion-reduce:transition-none ${
         modoOscuro
-          ? "border-[#D69A3F] bg-[#123850] text-[#FEFEFA] shadow-[6px_6px_0px_#D69A3F]"
-          : "border-[#123850] bg-[#FEFEFA] text-[#123850] shadow-[6px_6px_0px_#123850]"
+          ? "border-[#123850] bg-[#123850] text-[#FEFEFA] shadow-[6px_6px_0px_#D69A3F]"
+          : PANEL_PRINCIPAL
       }`}
     >
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <span
-            className={`inline-block -rotate-1 rounded-full border-2 px-2.5 py-0.5 font-mono text-[11px] font-black uppercase tracking-wider ${
-              modoOscuro
-                ? "border-[#FEFEFA] bg-[#D69A3F] text-[#123850]"
-                : "border-[#123850] bg-[#D69A3F] text-[#123850]"
-            }`}
-          >
-            ✦ Misión 4 · Reacciones
-          </span>
-          <h2 className="mt-1.5 text-xl font-black tracking-tight">
-            Deja tu reacción en la libreta
-          </h2>
-        </div>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 border-b-2 border-dashed border-[#123850]/30 pb-4">
+        <h2 className="text-xl font-black tracking-tight">Reacciones ({total})</h2>
 
         <button
           type="button"
           onClick={alternarTema}
           onMouseEnter={playHoverTick}
           aria-pressed={modoOscuro}
-          aria-label={
+          className={`rounded-xl border-2 px-3.5 py-1.5 font-mono text-xs font-black ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
             modoOscuro
-              ? "Cambiar tarjeta de reacciones a tema claro Baby Powder"
-              : "Cambiar tarjeta de reacciones a tema oscuro Gibraltar Sea"
-          }
-          className={`cursor-pointer rounded-full border-2 px-3.5 py-1.5 font-mono text-xs font-bold transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transition-none ${
-            modoOscuro
-              ? "border-[#D69A3F] bg-[#FEFEFA] text-[#123850] shadow-[2px_2px_0px_#D69A3F]"
-              : "border-[#123850] bg-[#123850] text-[#FEFEFA] shadow-[2px_2px_0px_#D69A3F]"
+              ? "border-[#FEFEFA] bg-[#FEFEFA] text-[#123850] shadow-[3px_3px_0px_#D69A3F]"
+              : "border-[#123850] bg-[#123850] text-[#FEFEFA] shadow-[3px_3px_0px_#123850]"
           }`}
         >
-          {modoOscuro ? "☀️ Baby Powder" : "🌙 Gibraltar Sea"}
+          {modoOscuro ? "☀️ Claro" : "🌙 Oscuro"}
         </button>
       </div>
 
@@ -91,45 +74,31 @@ export function Reacciones() {
               type="button"
               onClick={() => sumar(item.id)}
               onMouseEnter={playHoverTick}
-              aria-label={`Reaccionar con ${item.etiqueta}. Total actual: ${item.votos}`}
-              className={`group flex cursor-pointer items-center justify-between rounded-xl border-2 px-4 py-3 text-left transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transition-none ${
+              aria-label={`${item.etiqueta}: ${item.votos}`}
+              className={`group flex items-center justify-between rounded-2xl border-[2.5px] px-4 py-3 text-left ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
                 modoOscuro
                   ? activa
-                    ? "border-[#D69A3F] bg-[#FEFEFA]/10 text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F]"
-                    : "border-[#FEFEFA]/60 bg-[#123850] text-[#FEFEFA] shadow-[3px_3px_0px_#D69A3F]"
+                    ? "border-[#D69A3F] bg-[#D69A3F]/20 text-[#FEFEFA] shadow-[4px_4px_0px_#D69A3F]"
+                    : "border-[#FEFEFA] bg-[#123850] text-[#FEFEFA] shadow-[4px_4px_0px_#D69A3F]"
                   : activa
-                    ? "border-[#123850] bg-[#FAF6EC] text-[#123850] shadow-[3px_3px_0px_#123850]"
-                    : "border-[#123850] bg-[#FEFEFA] text-[#123850] shadow-[3px_3px_0px_#123850]"
+                    ? "border-[#123850] bg-[#D69A3F]/20 text-[#123850] shadow-[4px_4px_0px_#123850]"
+                    : "border-[#123850] bg-[#FEFEFA] text-[#123850] shadow-[4px_4px_0px_#123850]"
               }`}
             >
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl transition-transform group-hover:scale-125 motion-reduce:transition-none">
+                <span className="text-2xl transition-transform group-hover:scale-110 motion-reduce:transition-none">
                   {item.emoji}
                 </span>
-                <span className="text-xs font-extrabold">{item.etiqueta}</span>
+                <span className="text-sm font-black">{item.etiqueta}</span>
               </div>
-              <span
-                className={`rounded-full border-2 px-2.5 py-0.5 font-mono text-xs font-black ${
-                  modoOscuro
-                    ? "border-[#FEFEFA] bg-[#D69A3F] text-[#123850]"
-                    : "border-[#123850] bg-[#D69A3F] text-[#123850]"
-                }`}
-              >
+
+              <span className="rounded-lg border-2 border-[#123850] bg-[#D69A3F] px-2.5 py-0.5 font-mono text-xs font-black text-[#123850]">
                 {item.votos}
               </span>
             </button>
           );
         })}
       </div>
-
-      <p
-        className={`mt-4 text-right font-mono text-xs font-bold ${
-          modoOscuro ? "text-[#FEFEFA]/85" : "text-[#355870]"
-        }`}
-      >
-        Total de clics:{" "}
-        <span className="font-black underline decoration-[#D69A3F] decoration-2">{total}</span>
-      </p>
     </section>
   );
 }

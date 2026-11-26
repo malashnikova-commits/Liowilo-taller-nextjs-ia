@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { playLevelUp, playPop, playToggle } from "../sonidos";
+import {
+  BOTON_ACENTO,
+  BOTON_CLARO,
+  FISICA_TACTIL,
+  FOCO_ACCESIBLE,
+  INPUT_BASE,
+  SUBTARJETA,
+} from "../temaSketch";
 import type {
   CarpetaFuentes,
   EstadoVisualNodo,
@@ -52,14 +60,14 @@ export function calcularEstadoNodo(
       if (prereq && prereq.visible && !progreso.nodosCompletados.includes(prereq.id)) {
         return {
           estado: "bloqueado",
-          motivoBloqueo: `Completa antes "${prereq.titulo}"`,
+          motivoBloqueo: `Requiere "${prereq.titulo}"`,
         };
       }
     }
     if (nodo.bloqueoPorFecha && hoyISO < nodo.fechaInicio) {
       return {
         estado: "bloqueado",
-        motivoBloqueo: `Disponible a partir del ${nodo.fechaInicio}`,
+        motivoBloqueo: `Abre el ${nodo.fechaInicio}`,
       };
     }
   }
@@ -99,18 +107,18 @@ export function MapaNodos({
     .sort((a, b) => a.orden - b.orden)
     .filter((n) => modoEdicionDocente || n.visible);
 
-  const nodoActivo =
-    nodosOrdenados.find((n) => n.id === nodoSeleccionadoId) ?? nodosOrdenados[0] ?? null;
+  const nodoActivo = nodosOrdenados.find((n) => n.id === nodoSeleccionadoId) ?? null;
 
   const abrirFormularioNuevo = () => {
-    playPop();
+    playToggle(true);
     const ultimo = nodosOrdenados[nodosOrdenados.length - 1];
-    const nuevo: NodoTemario = {
+    setEsNuevoNodo(true);
+    setEditandoNodo({
       id: `nodo-${Date.now()}`,
       orden: nodos.length + 1,
-      unidad: ultimo?.unidad ?? "Unidad Nueva",
-      titulo: "Nuevo tema del curso",
-      descripcion: "Describe el objetivo práctico y entregable de este nodo.",
+      unidad: ultimo?.unidad ?? "Unidad",
+      titulo: "Nuevo nodo",
+      descripcion: "",
       emoji: "⭐",
       xp: 80,
       fechaInicio: hoyISO,
@@ -122,17 +130,12 @@ export function MapaNodos({
       bloqueoPorFecha: false,
       desbloqueoManual: false,
       visible: true,
-      checklist: [
-        { id: `chk-${Date.now()}-1`, texto: "Revisar material de la carpeta vinculada" },
-        { id: `chk-${Date.now()}-2`, texto: "Completar ejercicio práctico del tema" },
-      ],
-    };
-    setEsNuevoNodo(true);
-    setEditandoNodo(nuevo);
+      checklist: [{ id: `chk-${Date.now()}`, texto: "Actividad práctica" }],
+    });
   };
 
   const abrirFormularioEdicion = (nodo: NodoTemario) => {
-    playPop();
+    playToggle(true);
     setEsNuevoNodo(false);
     setEditandoNodo({
       ...nodo,
@@ -146,277 +149,245 @@ export function MapaNodos({
     if (!editandoNodo || !editandoNodo.titulo.trim()) return;
     playLevelUp(75);
     onGuardarNodoDocente(editandoNodo, esNuevoNodo);
-    onSeleccionarNodo(editandoNodo.id);
     setEditandoNodo(null);
   };
 
+  const alternarNodo = (id: string) => {
+    const siguiente = nodoSeleccionadoId === id ? null : id;
+    playToggle(Boolean(siguiente));
+    onSeleccionarNodo(siguiente);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Cabecera de acción Docente en Mapa */}
-      {modoEdicionDocente && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-dashed border-[#123850] bg-[#FAF6EC] px-4 py-3">
-          <p className="font-mono text-xs font-bold text-[#123850]">
-            🛠️ <span className="font-black">Editor de Ruta activo:</span> reordena nodos, ajusta
-            ventanas de fechas o crea nuevos escalones en la ruta.
-          </p>
+    <div className="space-y-5">
+      {/* Botón Docente bajo demanda */}
+      {modoEdicionDocente && !editandoNodo && (
+        <div className="flex justify-end">
           <button
             type="button"
             onClick={abrirFormularioNuevo}
-            className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#D69A3F] px-4 py-1.5 font-mono text-xs font-black text-[#123850] shadow-[3px_3px_0px_#123850] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            className={`px-4 py-1.5 font-mono text-xs font-black ${BOTON_ACENTO}`}
           >
-            + Nuevo nodo en ruta
+            + Nuevo nodo
           </button>
         </div>
       )}
 
-      {/* Modal / Tarjeta de creación o edición Docente */}
+      {/* Formulario Docente oculto hasta invocar */}
       {modoEdicionDocente && editandoNodo && (
-        <form
-          onSubmit={guardarEdicion}
-          className="space-y-4 rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[6px_6px_0px_#123850]"
-        >
-          <div className="flex items-center justify-between gap-2 border-b-2 border-dashed border-[#123850]/25 pb-3">
+        <form onSubmit={guardarEdicion} className={`${SUBTARJETA} space-y-4 p-5`}>
+          <div className="flex items-center justify-between border-b-2 border-dashed border-[#123850]/30 pb-3">
             <h3 className="text-base font-black text-[#123850]">
-              {esNuevoNodo ? "✨ Crear Nuevo Nodo" : `✏️ Editando: ${editandoNodo.titulo}`}
+              {esNuevoNodo ? "Nuevo nodo" : editandoNodo.titulo}
             </h3>
             <button
               type="button"
-              onClick={() => setEditandoNodo(null)}
-              className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-0.5 font-mono text-xs font-black text-[#123850]"
+              onClick={() => {
+                playToggle(false);
+                setEditandoNodo(null);
+              }}
+              aria-label="Cerrar formulario de nodo"
+              className={`px-2.5 py-0.5 font-mono text-xs font-black ${BOTON_CLARO}`}
             >
-              Cancelar ✕
+              ✕
             </button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div className="sm:col-span-2">
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Título del nodo
-              </label>
+              <label className="mb-1 block font-mono text-xs font-black">Título</label>
               <input
                 type="text"
                 required
                 value={editandoNodo.titulo}
                 onChange={(e) => setEditandoNodo({ ...editandoNodo, titulo: e.target.value })}
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 text-sm font-bold text-[#123850]"
+                className={`w-full ${INPUT_BASE}`}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block font-mono text-xs font-black text-[#123850]">Emoji</label>
-                <input
-                  type="text"
-                  maxLength={8}
-                  value={editandoNodo.emoji}
-                  onChange={(e) => setEditandoNodo({ ...editandoNodo, emoji: e.target.value })}
-                  className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 text-center text-base"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block font-mono text-xs font-black text-[#123850]">XP</label>
-                <input
-                  type="number"
-                  min={10}
-                  max={500}
-                  step={10}
-                  value={editandoNodo.xp}
-                  onChange={(e) =>
-                    setEditandoNodo({ ...editandoNodo, xp: Math.max(10, Number(e.target.value) || 50) })
-                  }
-                  className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-2.5 py-1.5 font-mono text-sm font-bold text-[#123850]"
-                />
-              </div>
+            <div>
+              <label className="mb-1 block font-mono text-xs font-black">Emoji</label>
+              <input
+                type="text"
+                maxLength={6}
+                value={editandoNodo.emoji}
+                onChange={(e) => setEditandoNodo({ ...editandoNodo, emoji: e.target.value })}
+                className={`w-full text-center ${INPUT_BASE}`}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-xs font-black">XP</label>
+              <input
+                type="number"
+                min={10}
+                max={500}
+                step={10}
+                value={editandoNodo.xp}
+                onChange={(e) =>
+                  setEditandoNodo({ ...editandoNodo, xp: Math.max(10, Number(e.target.value) || 50) })
+                }
+                className={`w-full font-mono ${INPUT_BASE}`}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
             <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Unidad / Bloque
-              </label>
+              <label className="mb-1 block font-mono text-xs font-black">Unidad</label>
               <input
                 type="text"
                 value={editandoNodo.unidad}
                 onChange={(e) => setEditandoNodo({ ...editandoNodo, unidad: e.target.value })}
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 text-xs font-bold text-[#123850]"
+                className={`w-full ${INPUT_BASE}`}
               />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Fecha inicio
-              </label>
+              <label className="mb-1 block font-mono text-xs font-black">Inicio</label>
               <input
                 type="date"
                 value={editandoNodo.fechaInicio}
                 onChange={(e) => setEditandoNodo({ ...editandoNodo, fechaInicio: e.target.value })}
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-2.5 py-1.5 font-mono text-xs font-bold text-[#123850]"
+                className={`w-full font-mono ${INPUT_BASE}`}
               />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Fecha límite
-              </label>
+              <label className="mb-1 block font-mono text-xs font-black">Límite</label>
               <input
                 type="date"
                 value={editandoNodo.fechaLimite}
                 onChange={(e) => setEditandoNodo({ ...editandoNodo, fechaLimite: e.target.value })}
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-2.5 py-1.5 font-mono text-xs font-bold text-[#123850]"
+                className={`w-full font-mono ${INPUT_BASE}`}
               />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Tiempo estimado
-              </label>
+              <label className="mb-1 block font-mono text-xs font-black">Duración</label>
               <input
                 type="text"
                 value={editandoNodo.tiempoEstimado}
-                onChange={(e) => setEditandoNodo({ ...editandoNodo, tiempoEstimado: e.target.value })}
-                placeholder="Ej. 1.5 h"
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 font-mono text-xs font-bold text-[#123850]"
+                onChange={(e) =>
+                  setEditandoNodo({ ...editandoNodo, tiempoEstimado: e.target.value })
+                }
+                className={`w-full font-mono ${INPUT_BASE}`}
               />
             </div>
           </div>
 
-          <div>
-            <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-              Objetivo / Descripción
-            </label>
-            <textarea
-              rows={2}
-              value={editandoNodo.descripcion}
-              onChange={(e) => setEditandoNodo({ ...editandoNodo, descripcion: e.target.value })}
-              className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-2 text-xs font-semibold text-[#123850]"
-            />
-          </div>
+          <textarea
+            rows={2}
+            placeholder="Objetivo del nodo…"
+            value={editandoNodo.descripcion}
+            onChange={(e) => setEditandoNodo({ ...editandoNodo, descripcion: e.target.value })}
+            className={`w-full ${INPUT_BASE}`}
+          />
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Nodo prerequisito
-              </label>
-              <select
-                value={editandoNodo.prerequisitoId ?? ""}
-                onChange={(e) =>
-                  setEditandoNodo({
-                    ...editandoNodo,
-                    prerequisitoId: e.target.value ? e.target.value : null,
-                  })
-                }
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 text-xs font-bold text-[#123850]"
-              >
-                <option value="">Sin prerequisito (libre desde el inicio)</option>
-                {nodos
-                  .filter((n) => n.id !== editandoNodo.id)
-                  .map((n) => (
-                    <option key={n.id} value={n.id}>
-                      {n.emoji} {n.titulo}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block font-mono text-xs font-black text-[#123850]">
-                Proyecto asociado
-              </label>
-              <select
-                value={editandoNodo.proyectoId ?? ""}
-                onChange={(e) =>
-                  setEditandoNodo({
-                    ...editandoNodo,
-                    proyectoId: e.target.value ? e.target.value : null,
-                  })
-                }
-                className="w-full rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1.5 text-xs font-bold text-[#123850]"
-              >
-                <option value="">Sin proyecto directo</option>
-                {proyectos.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.emoji} {p.titulo}
+            <select
+              aria-label="Nodo prerequisito"
+              value={editandoNodo.prerequisitoId ?? ""}
+              onChange={(e) =>
+                setEditandoNodo({
+                  ...editandoNodo,
+                  prerequisitoId: e.target.value ? e.target.value : null,
+                })
+              }
+              className={INPUT_BASE}
+            >
+              <option value="">Sin prerequisito</option>
+              {nodos
+                .filter((n) => n.id !== editandoNodo.id)
+                .map((n) => (
+                  <option key={n.id} value={n.id}>
+                    Prerequisito: {n.titulo}
                   </option>
                 ))}
-              </select>
-            </div>
+            </select>
+
+            <select
+              aria-label="Proyecto asociado"
+              value={editandoNodo.proyectoId ?? ""}
+              onChange={(e) =>
+                setEditandoNodo({
+                  ...editandoNodo,
+                  proyectoId: e.target.value ? e.target.value : null,
+                })
+              }
+              className={INPUT_BASE}
+            >
+              <option value="">Sin proyecto asociado</option>
+              {proyectos.map((p) => (
+                <option key={p.id} value={p.id}>
+                  Proyecto: {p.titulo}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Carpetas vinculadas + banderas de bloqueo */}
-          <div className="space-y-2 rounded-xl border-2 border-[#123850]/30 bg-[#FAF6EC] p-3">
-            <p className="font-mono text-xs font-black text-[#123850]">
-              Carpetas de fuentes vinculadas:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {carpetas.map((c) => {
-                const vinculada = editandoNodo.carpetasIds.includes(c.id);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => {
-                      playToggle(!vinculada);
-                      const nuevas = vinculada
-                        ? editandoNodo.carpetasIds.filter((id) => id !== c.id)
-                        : [...editandoNodo.carpetasIds, c.id];
-                      setEditandoNodo({ ...editandoNodo, carpetasIds: nuevas });
-                    }}
-                    aria-pressed={vinculada}
-                    className={`cursor-pointer rounded-full border-2 border-[#123850] px-3 py-1 font-mono text-xs font-bold ${
-                      vinculada ? "bg-[#D69A3F] text-[#123850]" : "bg-[#FEFEFA] text-[#123850]"
-                    }`}
-                  >
-                    {c.emoji} {c.nombre} {vinculada ? "✓" : "+"}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="mt-2 flex flex-wrap gap-4 pt-1 text-xs font-bold text-[#123850]">
-              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={editandoNodo.bloqueoPorFecha}
-                  onChange={(e) =>
-                    setEditandoNodo({ ...editandoNodo, bloqueoPorFecha: e.target.checked })
-                  }
-                  className="accent-[#123850]"
-                />
-                <span>Bloquear hasta su fecha de inicio</span>
-              </label>
-
-              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={editandoNodo.desbloqueoManual}
-                  onChange={(e) =>
-                    setEditandoNodo({ ...editandoNodo, desbloqueoManual: e.target.checked })
-                  }
-                  className="accent-[#123850]"
-                />
-                <span>Desbloqueo manual forzado</span>
-              </label>
-
-              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={editandoNodo.visible}
-                  onChange={(e) => setEditandoNodo({ ...editandoNodo, visible: e.target.checked })}
-                  className="accent-[#123850]"
-                />
-                <span>Visible para el alumnado</span>
-              </label>
-            </div>
+          <div className="flex flex-wrap gap-2">
+            {carpetas.map((c) => {
+              const vinculada = editandoNodo.carpetasIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => {
+                    playToggle(!vinculada);
+                    const nuevas = vinculada
+                      ? editandoNodo.carpetasIds.filter((id) => id !== c.id)
+                      : [...editandoNodo.carpetasIds, c.id];
+                    setEditandoNodo({ ...editandoNodo, carpetasIds: nuevas });
+                  }}
+                  aria-pressed={vinculada}
+                  className={`px-3 py-1 font-mono text-xs font-black ${
+                    vinculada ? BOTON_ACENTO : BOTON_CLARO
+                  }`}
+                >
+                  {c.nombre} {vinculada ? "✓" : "+"}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Checklist editable del nodo */}
+          <div className="flex flex-wrap gap-4 text-xs font-bold">
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={editandoNodo.bloqueoPorFecha}
+                onChange={(e) =>
+                  setEditandoNodo({ ...editandoNodo, bloqueoPorFecha: e.target.checked })
+                }
+                className="accent-[#123850]"
+              />
+              <span>Bloquear por fecha</span>
+            </label>
+
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={editandoNodo.desbloqueoManual}
+                onChange={(e) =>
+                  setEditandoNodo({ ...editandoNodo, desbloqueoManual: e.target.checked })
+                }
+                className="accent-[#123850]"
+              />
+              <span>Desbloqueo manual</span>
+            </label>
+
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={editandoNodo.visible}
+                onChange={(e) => setEditandoNodo({ ...editandoNodo, visible: e.target.checked })}
+                className="accent-[#123850]"
+              />
+              <span>Visible</span>
+            </label>
+          </div>
+
           <div className="space-y-2">
-            <p className="font-mono text-xs font-black text-[#123850]">
-              Pasos de verificación del nodo:
-            </p>
             <ul className="space-y-1.5">
               {editandoNodo.checklist.map((paso) => (
                 <li
                   key={paso.id}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-[#123850]/40 bg-[#FAF6EC] px-3 py-1 text-xs font-bold text-[#123850]"
+                  className="flex items-center justify-between gap-2 rounded-xl border-2 border-[#123850]/30 px-3 py-1 text-xs font-bold"
                 >
                   <span>{paso.texto}</span>
                   <button
@@ -427,7 +398,7 @@ export function MapaNodos({
                         checklist: editandoNodo.checklist.filter((c) => c.id !== paso.id),
                       })
                     }
-                    className="cursor-pointer font-mono text-xs font-black text-[#123850]"
+                    className="cursor-pointer font-mono text-xs font-black"
                   >
                     ✕
                   </button>
@@ -439,8 +410,8 @@ export function MapaNodos({
                 type="text"
                 value={nuevoPasoTexto}
                 onChange={(e) => setNuevoPasoTexto(e.target.value)}
-                placeholder="Añadir nuevo paso de actividad…"
-                className="flex-1 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 text-xs font-bold text-[#123850]"
+                placeholder="Nueva actividad…"
+                className={`flex-1 ${INPUT_BASE}`}
               />
               <button
                 type="button"
@@ -456,428 +427,345 @@ export function MapaNodos({
                   });
                   setNuevoPasoTexto("");
                 }}
-                className="cursor-pointer rounded-xl border-2 border-[#123850] bg-[#FAF6EC] px-3 py-1 font-mono text-xs font-black text-[#123850]"
+                className={`px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
               >
-                + Paso
+                + Añadir
               </button>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="submit"
-              className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#D69A3F] px-5 py-2 font-mono text-xs font-black uppercase text-[#123850] shadow-[3px_3px_0px_#123850]"
-            >
-              💾 Guardar nodo
+          <div className="flex justify-end">
+            <button type="submit" className={`px-5 py-2 font-mono text-xs font-black ${BOTON_ACENTO}`}>
+              Guardar nodo
             </button>
           </div>
         </form>
       )}
 
-      {/* Diseño de 2 columnas en escritorio: Ruta sinuosa tipo Duolingo + Panel de Detalle */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Columna izquierda: Camino sinuoso de nodos */}
-        <div className="rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[5px_5px_0px_#123850] lg:col-span-6">
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <span className="inline-block -rotate-1 rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-0.5 font-mono text-[11px] font-black text-[#123850]">
-              🗺️ Ruta de Aprendizaje
-            </span>
-            <span className="font-mono text-[11px] font-bold text-[#123850]/75">
-              Toca un nodo para abrirlo
-            </span>
-          </div>
+      {/* Contenedor del Mapa + Panel desplegable solo cuando hay nodo seleccionado */}
+      <div className={`grid grid-cols-1 gap-6 ${nodoActivo ? "lg:grid-cols-12" : ""}`}>
+        <div
+          className={`${SUBTARJETA} flex flex-col items-center p-6 ${
+            nodoActivo ? "lg:col-span-6" : ""
+          }`}
+        >
+          {nodosOrdenados.map((nodo, idx) => {
+            const { estado } = calcularEstadoNodo(nodo, nodos, progreso, hoyISO);
+            const seleccionado = nodoActivo?.id === nodo.id;
+            const claseZigZag = CLASES_ZIGZAG[idx % CLASES_ZIGZAG.length];
+            const mostrarUnidad = idx === 0 || nodosOrdenados[idx - 1].unidad !== nodo.unidad;
 
-          <div className="flex flex-col items-center py-2">
-            {nodosOrdenados.map((nodo, idx) => {
-              const { estado } = calcularEstadoNodo(nodo, nodos, progreso, hoyISO);
-              const seleccionado = nodoActivo?.id === nodo.id;
-              const claseZigZag = CLASES_ZIGZAG[idx % CLASES_ZIGZAG.length];
-              const mostrarEncabezadoUnidad =
-                idx === 0 || nodosOrdenados[idx - 1].unidad !== nodo.unidad;
-
-              const iconoEstado =
-                estado === "completado"
-                  ? "✅"
-                  : estado === "en_progreso"
-                    ? "✏️"
-                    : estado === "disponible"
-                      ? "⭐"
-                      : "🔒";
-
-              return (
-                <div key={nodo.id} className="flex w-full flex-col items-center">
-                  {/* Cinta separadora de Unidad */}
-                  {mostrarEncabezadoUnidad && (
-                    <div className="my-2 flex w-full items-center gap-2">
-                      <span className="h-[2px] flex-1 border-t-2 border-dashed border-[#123850]/25" />
-                      <span className="rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-0.5 font-mono text-[10px] font-black uppercase tracking-wider text-[#123850]">
-                        {nodo.unidad}
-                      </span>
-                      <span className="h-[2px] flex-1 border-t-2 border-dashed border-[#123850]/25" />
-                    </div>
-                  )}
-
-                  {/* Nodo circular táctil estilo Duolingo Sketch */}
-                  <div className={`relative my-1 flex flex-col items-center transition-transform ${claseZigZag}`}>
-                    {estado === "disponible" && (
-                      <span className="mb-1 -rotate-2 rounded-full border-2 border-[#123850] bg-[#D69A3F] px-2.5 py-0.5 font-mono text-[10px] font-black uppercase text-[#123850] shadow-[2px_2px_0px_#123850] motion-reduce:animate-none animate-bounce">
-                        ¡Empezar!
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        playPop();
-                        onSeleccionarNodo(nodo.id);
-                      }}
-                      aria-pressed={seleccionado}
-                      aria-label={`${nodo.titulo} (${estado}, ${nodo.xp} XP)`}
-                      className={`group relative flex h-20 w-20 cursor-pointer flex-col items-center justify-center rounded-full border-[3px] border-[#123850] transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transition-none ${
-                        estado === "completado"
-                          ? "bg-[#D69A3F] text-[#123850] shadow-[0_6px_0_#123850]"
-                          : estado === "disponible"
-                            ? "bg-[#FEFEFA] text-[#123850] shadow-[0_6px_0_#123850] ring-4 ring-[#D69A3F]"
-                            : estado === "en_progreso"
-                              ? "bg-[#FAF6EC] text-[#123850] shadow-[0_6px_0_#123850] ring-2 ring-[#D69A3F]"
-                              : "border-dashed bg-[#FAF6EC]/70 text-[#123850]/60 shadow-[0_4px_0_#123850]"
-                      } ${seleccionado ? "scale-105" : ""}`}
-                    >
-                      <span className="text-2xl" aria-hidden="true">
-                        {estado === "bloqueado" ? "🔒" : nodo.emoji}
-                      </span>
-                      <span className="mt-0.5 font-mono text-[10px] font-black">
-                        {nodo.xp} XP
-                      </span>
-
-                      {/* Mini insignia de estado */}
-                      <span
-                        aria-hidden="true"
-                        className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#123850] bg-[#FEFEFA] text-xs"
-                      >
-                        {iconoEstado}
-                      </span>
-                    </button>
-
-                    <p
-                      className={`mt-1.5 max-w-[190px] text-center text-xs font-black leading-tight ${
-                        !nodo.visible ? "line-through opacity-60" : "text-[#123850]"
-                      }`}
-                    >
-                      {nodo.titulo}
-                    </p>
-
-                    {/* Controles rápidos de orden y edición Docente */}
-                    {modoEdicionDocente && (
-                      <div className="mt-1.5 flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playPop();
-                            onMoverNodoDocente(nodo.id, -1);
-                          }}
-                          disabled={idx === 0}
-                          aria-label={`Subir ${nodo.titulo}`}
-                          className="cursor-pointer rounded-md border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black disabled:opacity-40"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playPop();
-                            onMoverNodoDocente(nodo.id, 1);
-                          }}
-                          disabled={idx === nodosOrdenados.length - 1}
-                          aria-label={`Bajar ${nodo.titulo}`}
-                          className="cursor-pointer rounded-md border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black disabled:opacity-40"
-                        >
-                          ↓
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => abrirFormularioEdicion(nodo)}
-                          aria-label={`Editar ${nodo.titulo}`}
-                          className="cursor-pointer rounded-md border border-[#123850] bg-[#D69A3F] px-2 py-0.5 font-mono text-[10px] font-black text-[#123850]"
-                        >
-                          Editar
-                        </button>
-                        {nodos.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              playToggle(false);
-                              onEliminarNodoDocente(nodo.id);
-                            }}
-                            aria-label={`Eliminar ${nodo.titulo}`}
-                            className="cursor-pointer rounded-md border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black text-[#123850]"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Conector SVG punteado sinuoso hacia el siguiente nodo */}
-                  {idx < nodosOrdenados.length - 1 && (
-                    <svg
-                      aria-hidden="true"
-                      className="my-0.5 h-10 w-28 text-[#123850]"
-                      viewBox="0 0 112 40"
-                      fill="none"
-                    >
-                      <path
-                        d={
-                          idx % 2 === 0
-                            ? "M 56 2 C 62 16, 82 22, 84 38"
-                            : "M 84 2 C 80 18, 58 22, 56 38"
-                        }
-                        stroke={estado === "completado" ? "#D69A3F" : "#123850"}
-                        strokeWidth="3"
-                        strokeDasharray="6 6"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Columna derecha: Panel de Detalle del Nodo Seleccionado */}
-        <div className="lg:col-span-6">
-          {nodoActivo ? (
-            (() => {
-              const { estado, motivoBloqueo } = calcularEstadoNodo(
-                nodoActivo,
-                nodos,
-                progreso,
-                hoyISO
-              );
-              const bloqueadoParaAlumno = estado === "bloqueado" && !modoEdicionDocente;
-              const pasosMarcados = progreso.checklistMarcados[nodoActivo.id] ?? [];
-              const carpetasVinculadas = carpetas.filter((c) =>
-                nodoActivo.carpetasIds.includes(c.id)
-              );
-              const proyectoVinculado = proyectos.find((p) => p.id === nodoActivo.proyectoId);
-              const quizRespondido = progreso.respuestasCorrectas.includes(nodoActivo.id);
-              const eleccionQuiz = opcionElegidaQuiz[nodoActivo.id];
-
-              return (
-                <article
-                  aria-live="polite"
-                  className="sticky top-20 space-y-4 rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 shadow-[5px_5px_0px_#123850]"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-2 border-b-2 border-dashed border-[#123850]/25 pb-3">
-                    <div>
-                      <span className="font-mono text-[11px] font-black uppercase text-[#123850]/70">
-                        {nodoActivo.unidad} · ⏱ {nodoActivo.tiempoEstimado}
-                      </span>
-                      <h3 className="mt-0.5 text-xl font-black text-[#123850]">
-                        {nodoActivo.emoji} {nodoActivo.titulo}
-                      </h3>
-                    </div>
-
-                    <span className="rounded-full border-2 border-[#123850] bg-[#D69A3F] px-3 py-0.5 font-mono text-xs font-black text-[#123850] shadow-[2px_2px_0px_#123850]">
-                      +{nodoActivo.xp} XP
+            return (
+              <div key={nodo.id} className="flex w-full max-w-md flex-col items-center">
+                {mostrarUnidad && (
+                  <div className="my-3 flex w-full items-center gap-3">
+                    <span className="h-[2px] flex-1 border-t-2 border-dashed border-[#123850]/30" />
+                    <span className="font-mono text-[11px] font-black uppercase tracking-wider text-[#123850]/70">
+                      {nodo.unidad}
                     </span>
+                    <span className="h-[2px] flex-1 border-t-2 border-dashed border-[#123850]/30" />
                   </div>
+                )}
 
-                  <p className="text-sm font-semibold leading-relaxed text-[#123850]">
-                    {nodoActivo.descripcion}
+                <div className={`my-1 flex flex-col items-center ${claseZigZag}`}>
+                  <button
+                    type="button"
+                    onClick={() => alternarNodo(nodo.id)}
+                    aria-expanded={seleccionado}
+                    aria-label={`${nodo.titulo} (${estado})`}
+                    className={`relative flex h-18 w-18 flex-col items-center justify-center rounded-full border-[3px] border-[#123850] ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
+                      estado === "completado"
+                        ? "bg-[#D69A3F] text-[#123850] shadow-[0_5px_0_#123850]"
+                        : estado === "disponible"
+                          ? "bg-[#FEFEFA] text-[#123850] shadow-[0_5px_0_#123850] ring-4 ring-[#D69A3F] animate-pulse motion-reduce:animate-none"
+                          : estado === "en_progreso"
+                            ? "bg-[#D69A3F]/20 text-[#123850] shadow-[0_5px_0_#123850]"
+                            : "border-dashed bg-[#FEFEFA] text-[#123850]/70 shadow-[0_3px_0_#123850]"
+                    } ${seleccionado ? "scale-105" : ""}`}
+                  >
+                    <span className="text-2xl" aria-hidden="true">
+                      {estado === "bloqueado"
+                        ? "🔒"
+                        : estado === "completado"
+                          ? "✅"
+                          : nodo.emoji}
+                    </span>
+                  </button>
+
+                  <p
+                    className={`mt-2 max-w-[180px] text-center text-xs font-black leading-snug ${
+                      !nodo.visible ? "line-through opacity-60" : "text-[#123850]"
+                    }`}
+                  >
+                    {nodo.titulo}
                   </p>
 
-                  {/* Ventana de fechas sincronizada con el calendario */}
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-[#123850]/30 bg-[#FAF6EC] px-3 py-2 font-mono text-xs font-bold text-[#123850]">
-                    <span>📅 Ventana:</span>
-                    <span>{nodoActivo.fechaInicio}</span>
-                    <span aria-hidden="true">→</span>
-                    <span>{nodoActivo.fechaLimite}</span>
+                  {modoEdicionDocente && (
+                    <div className="mt-1.5 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playPop();
+                          onMoverNodoDocente(nodo.id, -1);
+                        }}
+                        disabled={idx === 0}
+                        aria-label={`Subir ${nodo.titulo}`}
+                        className="cursor-pointer rounded-lg border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black disabled:opacity-40"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playPop();
+                          onMoverNodoDocente(nodo.id, 1);
+                        }}
+                        disabled={idx === nodosOrdenados.length - 1}
+                        aria-label={`Bajar ${nodo.titulo}`}
+                        className="cursor-pointer rounded-lg border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black disabled:opacity-40"
+                      >
+                        ↓
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => abrirFormularioEdicion(nodo)}
+                        className="cursor-pointer rounded-lg border border-[#123850] bg-[#D69A3F] px-2 py-0.5 font-mono text-[10px] font-black"
+                      >
+                        Editar
+                      </button>
+                      {nodos.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playToggle(false);
+                            onEliminarNodoDocente(nodo.id);
+                          }}
+                          aria-label={`Eliminar ${nodo.titulo}`}
+                          className="cursor-pointer rounded-lg border border-[#123850] bg-[#FEFEFA] px-1.5 py-0.5 font-mono text-[10px] font-black"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {idx < nodosOrdenados.length - 1 && (
+                  <svg
+                    aria-hidden="true"
+                    className="my-0.5 h-9 w-24 text-[#123850]"
+                    viewBox="0 0 96 36"
+                    fill="none"
+                  >
+                    <path
+                      d={
+                        idx % 2 === 0
+                          ? "M 48 2 C 54 14, 72 20, 74 34"
+                          : "M 74 2 C 70 16, 50 20, 48 34"
+                      }
+                      stroke={estado === "completado" ? "#D69A3F" : "#123850"}
+                      strokeWidth="2.5"
+                      strokeDasharray="5 5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Detalle del nodo bajo demanda (se abre solo al hacer clic) */}
+        {nodoActivo &&
+          (() => {
+            const { estado, motivoBloqueo } = calcularEstadoNodo(
+              nodoActivo,
+              nodos,
+              progreso,
+              hoyISO
+            );
+            const bloqueado = estado === "bloqueado" && !modoEdicionDocente;
+            const pasosMarcados = progreso.checklistMarcados[nodoActivo.id] ?? [];
+            const carpetasVinculadas = carpetas.filter((c) =>
+              nodoActivo.carpetasIds.includes(c.id)
+            );
+            const proyectoVinculado = proyectos.find((p) => p.id === nodoActivo.proyectoId);
+            const quizRespondido = progreso.respuestasCorrectas.includes(nodoActivo.id);
+            const eleccionQuiz = opcionElegidaQuiz[nodoActivo.id];
+
+            return (
+              <article
+                aria-live="polite"
+                className={`${SUBTARJETA} space-y-4 p-5 lg:col-span-6 lg:sticky lg:top-20 lg:self-start`}
+              >
+                <div className="flex items-start justify-between gap-3 border-b-2 border-dashed border-[#123850]/30 pb-3">
+                  <div>
+                    <p className="font-mono text-xs font-bold text-[#123850]/70">
+                      {nodoActivo.fechaInicio} → {nodoActivo.fechaLimite} · {nodoActivo.tiempoEstimado}
+                    </p>
+                    <h3 className="mt-0.5 text-lg font-black text-[#123850]">
+                      {nodoActivo.emoji} {nodoActivo.titulo}
+                    </h3>
                   </div>
 
-                  {/* Aviso si está bloqueado */}
-                  {bloqueadoParaAlumno ? (
-                    <div className="rounded-xl border-2 border-dashed border-[#123850] bg-[#FAF6EC] p-4 text-center">
-                      <p className="text-2xl" aria-hidden="true">
-                        🔒
-                      </p>
-                      <p className="mt-1 text-sm font-black text-[#123850]">Nodo bloqueado</p>
-                      <p className="mt-0.5 text-xs font-bold text-[#123850]/75">
-                        {motivoBloqueo ?? "Completa el nodo anterior para desbloquear este reto."}
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Checklist de actividades del nodo */}
-                      <div className="space-y-2">
-                        <p className="font-mono text-xs font-black uppercase text-[#123850]">
-                          ✓ Actividades para dominar el nodo ({pasosMarcados.length}/
-                          {nodoActivo.checklist.length})
-                        </p>
-                        <ul className="space-y-2">
-                          {nodoActivo.checklist.map((paso) => {
-                            const hecho = pasosMarcados.includes(paso.id);
-                            return (
-                              <li key={paso.id}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    playPop();
-                                    onAlternarPasoChecklist(nodoActivo.id, paso.id);
-                                  }}
-                                  aria-pressed={hecho}
-                                  className={`flex w-full cursor-pointer items-center gap-2.5 rounded-xl border-2 border-[#123850] px-3 py-2 text-left text-xs font-bold transition-transform active:translate-x-[1px] active:translate-y-[1px] ${
-                                    hecho
-                                      ? "bg-[#D69A3F]/25 text-[#123850]"
-                                      : "bg-[#FEFEFA] text-[#123850]"
-                                  }`}
-                                >
-                                  <span
-                                    aria-hidden="true"
-                                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 border-[#123850] font-mono text-xs font-black ${
-                                      hecho ? "bg-[#D69A3F]" : "bg-[#FEFEFA]"
-                                    }`}
-                                  >
-                                    {hecho ? "✓" : ""}
-                                  </span>
-                                  <span className={hecho ? "line-through opacity-85" : ""}>
-                                    {paso.texto}
-                                  </span>
-                                </button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playToggle(false);
+                      onSeleccionarNodo(null);
+                    }}
+                    aria-label="Cerrar detalle del nodo"
+                    className={`px-2.5 py-0.5 font-mono text-xs font-black ${BOTON_CLARO}`}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-                      {/* Pregunta rápida opcional estilo Duolingo */}
-                      {nodoActivo.preguntaRapida && (
-                        <div className="space-y-2 rounded-xl border-2 border-[#123850] bg-[#FAF6EC] p-3.5">
-                          <p className="font-mono text-xs font-black text-[#123850]">
-                            🧠 Mini reto rápido: {nodoActivo.preguntaRapida.pregunta}
-                          </p>
-                          <div className="space-y-1.5">
-                            {nodoActivo.preguntaRapida.opciones.map((op, i) => {
-                              const esCorrecta = i === nodoActivo.preguntaRapida!.indiceCorrecto;
-                              const fueElegida = eleccionQuiz === i;
-                              return (
-                                <button
-                                  key={i}
-                                  type="button"
-                                  onClick={() => {
-                                    setOpcionElegidaQuiz((prev) => ({
-                                      ...prev,
-                                      [nodoActivo.id]: i,
-                                    }));
-                                    if (esCorrecta) {
-                                      playLevelUp(85);
-                                      onResponderQuiz(nodoActivo.id);
-                                    } else {
-                                      playToggle(false);
-                                    }
-                                  }}
-                                  className={`block w-full cursor-pointer rounded-lg border-2 border-[#123850] px-3 py-1.5 text-left text-xs font-bold ${
-                                    quizRespondido && esCorrecta
-                                      ? "bg-[#D69A3F] text-[#123850]"
-                                      : fueElegida && !esCorrecta
-                                        ? "bg-[#123850] text-[#FEFEFA]"
-                                        : "bg-[#FEFEFA] text-[#123850]"
-                                  }`}
-                                >
-                                  {op}
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {eleccionQuiz !== undefined && (
-                            <p className="font-mono text-[11px] font-black text-[#123850]">
-                              {eleccionQuiz === nodoActivo.preguntaRapida.indiceCorrecto
-                                ? "✅ ¡Exacto! Concepto dominado."
-                                : "💡 Casi; intenta con otra opción."}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                <p className="text-sm font-semibold leading-relaxed text-[#123850]">
+                  {nodoActivo.descripcion}
+                </p>
 
-                      {/* Accesos directos a Carpetas de Fuentes y Proyecto vinculado */}
-                      {(carpetasVinculadas.length > 0 || proyectoVinculado) && (
-                        <div className="space-y-2 pt-1">
-                          <p className="font-mono text-xs font-black text-[#123850]">
-                            📂 Contextos y entregas vinculadas:
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {carpetasVinculadas.map((c) => (
-                              <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => {
-                                  playPop();
-                                  onIrACarpeta(c.id);
-                                }}
-                                className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#FAF6EC] px-3 py-1 font-mono text-xs font-extrabold text-[#123850] shadow-[2px_2px_0px_#123850] hover:-translate-y-0.5"
-                              >
-                                {c.emoji} {c.nombre} →
-                              </button>
-                            ))}
-
-                            {proyectoVinculado && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  playPop();
-                                  onIrAProyecto(proyectoVinculado.id);
-                                }}
-                                className="cursor-pointer rounded-full border-2 border-[#123850] bg-[#D69A3F]/30 px-3 py-1 font-mono text-xs font-black text-[#123850] shadow-[2px_2px_0px_#123850] hover:-translate-y-0.5"
-                              >
-                                {proyectoVinculado.emoji} Proyecto: {proyectoVinculado.titulo} →
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Botón principal de completar / acreditar XP */}
-                      <div className="pt-2">
-                        {estado === "completado" ? (
-                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-[#123850] bg-[#D69A3F] px-4 py-2.5">
-                            <span className="font-mono text-xs font-black text-[#123850]">
-                              ✅ Nodo completado (+{nodoActivo.xp} XP acreditados)
-                            </span>
+                {bloqueado ? (
+                  <p className="rounded-xl border-2 border-dashed border-[#123850]/30 p-4 text-center font-mono text-xs font-bold text-[#123850]/70">
+                    🔒 {motivoBloqueo ?? "Bloqueado"}
+                  </p>
+                ) : (
+                  <>
+                    <ul className="space-y-2">
+                      {nodoActivo.checklist.map((paso) => {
+                        const hecho = pasosMarcados.includes(paso.id);
+                        return (
+                          <li key={paso.id}>
                             <button
                               type="button"
                               onClick={() => {
-                                playToggle(false);
-                                onAlternarCompletadoNodo(nodoActivo.id, false);
+                                playPop();
+                                onAlternarPasoChecklist(nodoActivo.id, paso.id);
                               }}
-                              className="cursor-pointer rounded-full border border-[#123850] bg-[#FEFEFA] px-2.5 py-0.5 font-mono text-[10px] font-black text-[#123850]"
+                              aria-pressed={hecho}
+                              className={`flex w-full items-center gap-2.5 rounded-xl border-2 border-[#123850] px-3 py-2 text-left text-xs font-bold ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
+                                hecho ? "bg-[#D69A3F]/20" : "bg-[#FEFEFA]"
+                              }`}
                             >
-                              Reabrir
+                              <span
+                                aria-hidden="true"
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border border-[#123850] font-mono text-[10px] font-black ${
+                                  hecho ? "bg-[#D69A3F]" : "bg-[#FEFEFA]"
+                                }`}
+                              >
+                                {hecho ? "✓" : ""}
+                              </span>
+                              <span className={hecho ? "line-through opacity-75" : ""}>
+                                {paso.texto}
+                              </span>
                             </button>
-                          </div>
-                        ) : (
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {nodoActivo.preguntaRapida && (
+                      <div className="space-y-2 rounded-xl border-2 border-dashed border-[#123850]/30 p-3.5">
+                        <p className="text-xs font-black text-[#123850]">
+                          {nodoActivo.preguntaRapida.pregunta}
+                        </p>
+                        <div className="space-y-1.5">
+                          {nodoActivo.preguntaRapida.opciones.map((op, i) => {
+                            const esCorrecta = i === nodoActivo.preguntaRapida!.indiceCorrecto;
+                            const fueElegida = eleccionQuiz === i;
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                  setOpcionElegidaQuiz((prev) => ({
+                                    ...prev,
+                                    [nodoActivo.id]: i,
+                                  }));
+                                  if (esCorrecta) {
+                                    playLevelUp(85);
+                                    onResponderQuiz(nodoActivo.id);
+                                  } else {
+                                    playToggle(false);
+                                  }
+                                }}
+                                className={`block w-full rounded-xl border-2 border-[#123850] px-3 py-1.5 text-left text-xs font-bold ${FISICA_TACTIL} ${FOCO_ACCESIBLE} ${
+                                  quizRespondido && esCorrecta
+                                    ? "bg-[#D69A3F] text-[#123850]"
+                                    : fueElegida && !esCorrecta
+                                      ? "bg-[#123850] text-[#FEFEFA]"
+                                      : "bg-[#FEFEFA] text-[#123850]"
+                                }`}
+                              >
+                                {op}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {(carpetasVinculadas.length > 0 || proyectoVinculado) && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {carpetasVinculadas.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              playPop();
+                              onIrACarpeta(c.id);
+                            }}
+                            className={`px-3 py-1 font-mono text-xs font-black ${BOTON_CLARO}`}
+                          >
+                            {c.emoji} {c.nombre} →
+                          </button>
+                        ))}
+
+                        {proyectoVinculado && (
                           <button
                             type="button"
                             onClick={() => {
-                              playLevelUp(100);
-                              onAlternarCompletadoNodo(nodoActivo.id, true);
+                              playPop();
+                              onIrAProyecto(proyectoVinculado.id);
                             }}
-                            className="w-full cursor-pointer rounded-2xl border-2 border-[#123850] bg-[#D69A3F] px-4 py-3 font-mono text-xs font-black uppercase tracking-wide text-[#123850] shadow-[4px_4px_0px_#123850] transition-transform hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                            className={`px-3 py-1 font-mono text-xs font-black ${BOTON_ACENTO}`}
                           >
-                            🎉 Completar nodo y ganar +{nodoActivo.xp} XP
+                            {proyectoVinculado.emoji} {proyectoVinculado.titulo} →
                           </button>
                         )}
                       </div>
-                    </>
-                  )}
-                </article>
-              );
-            })()
-          ) : (
-            <p className="text-sm font-bold text-[#123850]">No hay nodos visibles en el temario.</p>
-          )}
-        </div>
+                    )}
+
+                    <div className="pt-1">
+                      {estado === "completado" ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playToggle(false);
+                            onAlternarCompletadoNodo(nodoActivo.id, false);
+                          }}
+                          className={`w-full px-4 py-2 font-mono text-xs font-black ${BOTON_CLARO}`}
+                        >
+                          ✅ Completado · Reabrir
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playLevelUp(100);
+                            onAlternarCompletadoNodo(nodoActivo.id, true);
+                          }}
+                          className={`w-full px-4 py-2.5 font-mono text-xs font-black uppercase ${BOTON_ACENTO}`}
+                        >
+                          Completar (+{nodoActivo.xp} XP)
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </article>
+            );
+          })()}
       </div>
     </div>
   );
