@@ -22,7 +22,11 @@ import {
   listarTrabajosLocales,
   type TrabajoPublicado,
 } from "@/lib/storage/localDB";
-import { probarEstadoBanco, subirArchivoBanco } from "@/lib/storage/powershellBridge";
+import {
+  esEntornoLocalNavegador,
+  probarEstadoBanco,
+  subirArchivoBanco,
+} from "@/lib/storage/powershellBridge";
 import { useAutoSave } from "@/lib/storage/useAutoSave";
 
 type TabPlataforma = "aula" | "ruta" | "muro";
@@ -45,6 +49,7 @@ export function PlataformaEducativa({ alumnos }: { alumnos: Alumno[] }) {
 
   // Ajustes híbridos / PowerShell (contraídos por defecto)
   const [ajustesAbiertos, setAjustesAbiertos] = useState(false);
+  const [esEntornoLocal, setEsEntornoLocal] = useState(false);
   const [usarBancoPS, setUsarBancoPS] = useState(false);
   const [tokenPS, setTokenPS] = useState("");
   const [estadoPS, setEstadoPS] = useState<string | null>(null);
@@ -74,6 +79,13 @@ export function PlataformaEducativa({ alumnos }: { alumnos: Alumno[] }) {
   const [nodoAbiertoId, setNodoAbiertoId] = useState<string | null>(null);
 
   const importRef = useRef<HTMLInputElement | null>(null);
+
+  // Detección automática de entorno local vs enlace público
+  useEffect(() => {
+    const local = esEntornoLocalNavegador();
+    setEsEntornoLocal(local);
+    if (!local) setUsarBancoPS(false);
+  }, []);
 
   // Hidratación desde IndexedDB / localStorage aislada por userId
   useEffect(() => {
@@ -184,7 +196,7 @@ export function PlataformaEducativa({ alumnos }: { alumnos: Alumno[] }) {
         createdAt: new Date().toISOString(),
       });
 
-      if (usarBancoPS && tokenPS.trim()) {
+      if (usarBancoPS && tokenPS.trim() && esEntornoLocal) {
         const buf = await archivo.arrayBuffer();
         const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
         await subirArchivoBanco(
@@ -385,50 +397,56 @@ export function PlataformaEducativa({ alumnos }: { alumnos: Alumno[] }) {
               </button>
             </div>
 
-            {/* Puente PowerShell 127.0.0.1:4780 */}
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed border-[#123850]/30 p-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const sig = !usarBancoPS;
-                  playToggle(sig);
-                  setUsarBancoPS(sig);
-                }}
-                aria-pressed={usarBancoPS}
-                className={`cursor-pointer rounded-xl border-2 border-[#123850] px-3 py-1 font-mono text-xs font-black ${
-                  usarBancoPS ? "bg-[#D69A3F]" : "bg-[#FEFEFA]"
-                }`}
-              >
-                {usarBancoPS ? "🟢 Banco Local PowerShell ON" : "⚪ Banco Local PowerShell OFF"}
-              </button>
+            {/* Puente PowerShell 127.0.0.1:4780 (solo en localhost) */}
+            {esEntornoLocal ? (
+              <div className="flex flex-wrap items-center gap-2 rounded-2xl border-2 border-dashed border-[#123850]/30 p-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sig = !usarBancoPS;
+                    playToggle(sig);
+                    setUsarBancoPS(sig);
+                  }}
+                  aria-pressed={usarBancoPS}
+                  className={`cursor-pointer rounded-xl border-2 border-[#123850] px-3 py-1 font-mono text-xs font-black ${
+                    usarBancoPS ? "bg-[#D69A3F]" : "bg-[#FEFEFA]"
+                  }`}
+                >
+                  {usarBancoPS ? "🟢 Banco Local PowerShell ON" : "⚪ Banco Local PowerShell OFF"}
+                </button>
 
-              <input
-                type="password"
-                value={tokenPS}
-                onChange={(e) => setTokenPS(e.target.value)}
-                placeholder="X-Local-Token…"
-                className="flex-1 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-xs font-bold"
-              />
+                <input
+                  type="password"
+                  value={tokenPS}
+                  onChange={(e) => setTokenPS(e.target.value)}
+                  placeholder="X-Local-Token…"
+                  className="flex-1 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-xs font-bold"
+                />
 
-              <button
-                type="button"
-                onClick={async () => {
-                  const r = await probarEstadoBanco(tokenPS.trim());
-                  setEstadoPS(
-                    r.disponible && !r.error
-                      ? "✓ Conectado a 127.0.0.1:4780"
-                      : `Sin conexión (${r.error ?? "usa IndexedDB"})`
-                  );
-                }}
-                className="cursor-pointer rounded-xl border-2 border-[#123850] bg-[#123850] px-3 py-1 font-mono text-xs font-black text-[#FEFEFA]"
-              >
-                Probar
-              </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const r = await probarEstadoBanco(tokenPS.trim());
+                    setEstadoPS(
+                      r.disponible && !r.error
+                        ? "✓ Conectado a 127.0.0.1:4780"
+                        : `Sin conexión (${r.error ?? "usa IndexedDB"})`
+                    );
+                  }}
+                  className="cursor-pointer rounded-xl border-2 border-[#123850] bg-[#123850] px-3 py-1 font-mono text-xs font-black text-[#FEFEFA]"
+                >
+                  Probar
+                </button>
 
-              {estadoPS && (
-                <span className="font-mono text-xs font-bold text-[#123850]/70">{estadoPS}</span>
-              )}
-            </div>
+                {estadoPS && (
+                  <span className="font-mono text-xs font-bold text-[#123850]/70">{estadoPS}</span>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border-2 border-dashed border-[#123850]/30 bg-[#D69A3F]/20 px-3 py-2 font-mono text-xs font-bold text-[#123850]">
+                🔒 Banco PowerShell solo activo en localhost · Operando con nube / navegador
+              </div>
+            )}
           </div>
         )}
       </SketchCard>

@@ -8,12 +8,20 @@ export interface RespuestaBanco {
   error?: string;
 }
 
+export function esEntornoLocalNavegador(): boolean {
+  if (typeof window === "undefined") return false;
+  const host = window.location.hostname;
+  return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+}
+
 async function fetchBanco(
   ruta: string,
   token: string,
   init?: RequestInit
 ): Promise<RespuestaBanco> {
-  if (typeof window === "undefined") return { disponible: false };
+  if (!esEntornoLocalNavegador()) {
+    return { disponible: false, error: "Desactivado fuera de localhost" };
+  }
   try {
     const res = await fetch(`${BASE_BANCO_URL}${ruta}`, {
       ...init,

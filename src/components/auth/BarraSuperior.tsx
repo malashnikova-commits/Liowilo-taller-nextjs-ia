@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { CompartirEnlace } from "@/components/sketch/CompartirEnlace";
 import { SoundControl } from "@/components/sketch/SoundControl";
 import { playToggle } from "@/lib/sonidosGlobal";
+
+const NOMBRE_APP = process.env.NEXT_PUBLIC_APP_NAME?.trim() || "~/plataforma-aula";
 
 export function BarraSuperior() {
   const { usuario, hidratado, estadoGuardado, cerrarSesion } = useAuth();
@@ -16,7 +19,7 @@ export function BarraSuperior() {
             href="/"
             className="rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-1 font-mono text-xs font-black text-[#123850] shadow-[3px_3px_0px_#123850] transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none sm:text-sm"
           >
-            ~/plataforma-aula
+            {NOMBRE_APP}
           </Link>
 
           <Link
@@ -61,6 +64,7 @@ export function BarraSuperior() {
             </>
           )}
 
+          <CompartirEnlace />
           <SoundControl />
         </div>
       </nav>

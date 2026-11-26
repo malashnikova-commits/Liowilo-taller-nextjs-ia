@@ -3,8 +3,10 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import { BarraSuperior } from "@/components/auth/BarraSuperior";
 import "./globals.css";
 
+const appName = process.env.NEXT_PUBLIC_APP_NAME?.trim() || "Plataforma Aula · Sketch Doodle Art";
+
 export const metadata: Metadata = {
-  title: "Plataforma Aula · Sketch Doodle Art",
+  title: appName,
   description: "Plataforma educativa Sketch Doodle Art + Minimalism Kidcore",
 };
 

@@ -5,7 +5,7 @@ import type { ProgresoUsuario } from "@/lib/auth";
 import type { EstadoGuardado } from "@/components/auth/AuthProvider";
 import { sincronizarProgresoNube } from "./cloudSync";
 import { guardarProgresoLocal } from "./localDB";
-import { enviarProgresoBanco } from "./powershellBridge";
+import { enviarProgresoBanco, esEntornoLocalNavegador } from "./powershellBridge";
 
 interface UseAutoSaveOpciones {
   progreso: ProgresoUsuario | null;
@@ -42,7 +42,7 @@ export function useAutoSave({
       try {
         await guardarProgresoLocal(progreso);
 
-        if (usarBancoPowerShell && tokenPowerShell.trim()) {
+        if (usarBancoPowerShell && tokenPowerShell.trim() && esEntornoLocalNavegador()) {
           await enviarProgresoBanco(tokenPowerShell.trim(), progreso);
         }
 
