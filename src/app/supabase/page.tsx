@@ -1,15 +1,11 @@
-// MISIÓN 5 · Esta página lee y escribe en TU proyecto de Supabase.
-// La tabla "mensajes" NO existe todavía: la vas a crear pidiéndoselo a OpenCode
-// a través del MCP de Supabase (ver README → Misión 5).
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { getSupabase, supabaseConfigurado } from "@/lib/supabase";
 
-// Siempre consulta datos frescos (no la guardes en caché al compilar)
 export const dynamic = "force-dynamic";
 
 type Mensaje = { id: number; usuario: string; mensaje: string; creado_en: string };
 
-// Server Action: una función que corre en el servidor cuando se envía el formulario.
 async function enviarMensaje(formData: FormData) {
   "use server";
   const supabase = getSupabase();
@@ -27,10 +23,14 @@ export default async function PaginaSupabase() {
   if (!supabaseConfigurado()) {
     return (
       <Contenedor>
-        <Aviso titulo="Falta conectar Supabase">
-          Copia <code>.env.example</code> como <code>.env.local</code>, pega tu URL y tu publishable
-          key, y reinicia <code>npm run dev</code>.
-        </Aviso>
+        <div className="mt-6 rounded-2xl border-[2.5px] border-dashed border-[#123850] bg-[#D69A3F]/20 p-5 text-sm font-bold text-[#123850]">
+          <p className="font-black">Modo local activo</p>
+          <p className="mt-1 text-[#123850]/70">
+            Configura <code>NEXT_PUBLIC_SUPABASE_URL</code> y{" "}
+            <code>NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> en <code>.env.local</code> para
+            sincronizar mensajes con Postgres.
+          </p>
+        </div>
       </Contenedor>
     );
   }
@@ -45,12 +45,12 @@ export default async function PaginaSupabase() {
   return (
     <Contenedor>
       {error ? (
-        <Aviso titulo="Conectado, pero algo falta">
-          Supabase respondió: <code>{error.message}</code>
-          <br />
-          Si dice que la tabla no existe, pídele a OpenCode que la cree (Misión 5, paso 3).
-          Si dice algo de permisos, revisa las políticas RLS.
-        </Aviso>
+        <div className="mt-6 rounded-2xl border-[2.5px] border-[#123850] bg-[#D69A3F]/20 p-5 text-sm font-bold text-[#123850]">
+          <p className="font-black">Conectado con detalle pendiente</p>
+          <p className="mt-1 text-[#123850]/70">
+            Supabase respondió: <code>{error.message}</code>
+          </p>
+        </div>
       ) : (
         <>
           <form action={enviarMensaje} className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -58,28 +58,36 @@ export default async function PaginaSupabase() {
               name="usuario"
               placeholder="tu-usuario"
               required
-              className="rounded-lg border border-borde bg-tinta px-3 py-2 font-mono text-sm outline-none focus:border-acento sm:w-40"
+              className="rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-2 font-mono text-sm font-bold text-[#123850] sm:w-44"
             />
             <input
               name="mensaje"
               placeholder="Escribe un mensaje…"
               required
               maxLength={200}
-              className="flex-1 rounded-lg border border-borde bg-tinta px-3 py-2 text-sm outline-none focus:border-acento"
+              className="flex-1 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3 py-2 text-sm font-bold text-[#123850]"
             />
-            <button className="rounded-lg bg-acento px-4 py-2 text-sm font-semibold text-tinta hover:opacity-90">
+            <button
+              type="submit"
+              className="cursor-pointer rounded-xl border-2 border-[#123850] bg-[#D69A3F] px-5 py-2 font-mono text-xs font-black uppercase text-[#123850] shadow-[3px_3px_0px_#123850] transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            >
               Enviar
             </button>
           </form>
 
           <ul className="mt-6 space-y-3">
             {(data as Mensaje[]).length === 0 && (
-              <li className="text-tenue">La tabla está vacía. ¡Escribe el primer mensaje!</li>
+              <li className="font-mono text-xs font-bold text-[#123850]/70">
+                Sin mensajes todavía.
+              </li>
             )}
             {(data as Mensaje[]).map((m) => (
-              <li key={m.id} className="rounded-xl border border-borde bg-panel p-4">
-                <p>{m.mensaje}</p>
-                <p className="mt-1 font-mono text-xs text-tenue">
+              <li
+                key={m.id}
+                className="rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-4 shadow-[4px_4px_0px_#123850]"
+              >
+                <p className="font-bold text-[#123850]">{m.mensaje}</p>
+                <p className="mt-1 font-mono text-xs font-bold text-[#123850]/70">
                   @{m.usuario} · {new Date(m.creado_en).toLocaleString("es-MX")}
                 </p>
               </li>
@@ -93,22 +101,22 @@ export default async function PaginaSupabase() {
 
 function Contenedor({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-3xl px-4 py-12">
-      <p className="font-mono text-sm text-acento">MISIÓN 5</p>
-      <h1 className="mt-1 text-3xl font-bold">Mensajes desde Supabase</h1>
-      <p className="mt-2 text-tenue">
-        Esta página habla con tu base de datos de Postgres en la nube.
-      </p>
-      {children}
-    </main>
-  );
-}
+    <main className="fondo-cuadricula min-h-[calc(100vh-56px)] px-4 py-12">
+      <div className="mx-auto max-w-3xl">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-xl border-2 border-[#123850] bg-[#FEFEFA] px-3.5 py-1.5 font-mono text-xs font-black text-[#123850] shadow-[3px_3px_0px_#123850] transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+        >
+          ← Volver
+        </Link>
 
-function Aviso({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
-      <p className="font-semibold text-amber-300">{titulo}</p>
-      <p className="mt-1 text-tenue">{children}</p>
-    </div>
+        <section className="mt-6 rounded-3xl border-[3px] border-[#123850] bg-[#FEFEFA] p-6 shadow-[6px_6px_0px_#123850] sm:p-8">
+          <h1 className="text-2xl font-black text-[#123850] sm:text-3xl">
+            Mensajes desde Supabase
+          </h1>
+          {children}
+        </section>
+      </div>
+    </main>
   );
 }

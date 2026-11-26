@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { type Alumno, misionesCompletadas, TOTAL_MISIONES } from "@/lib/alumnos";
+import { type Alumno, misionesCompletadas, TOTAL_MISIONES } from "@/lib/alumno-tipos";
 
-// Un componente es una función que recibe "props" y regresa JSX.
 export function TarjetaAlumno({ alumno }: { alumno: Alumno }) {
   const hechas = misionesCompletadas(alumno);
   const porcentaje = Math.round((hechas / TOTAL_MISIONES) * 100);
@@ -9,32 +8,39 @@ export function TarjetaAlumno({ alumno }: { alumno: Alumno }) {
   return (
     <Link
       href={`/alumnos/${alumno.usuario}`}
-      className="group relative flex flex-col gap-3 rounded-2xl border border-borde bg-panel p-5 transition hover:-translate-y-1 hover:border-acento/60"
+      className="group relative flex flex-col gap-3 rounded-2xl border-[2.5px] border-[#123850] bg-[#FEFEFA] p-5 text-[#123850] shadow-[4px_4px_0px_#123850] transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none motion-reduce:transition-none"
     >
-      {/* El color viene de datos (JSON), así que usamos style y no una clase de Tailwind */}
-      <span
-        className="absolute inset-x-0 top-0 h-1 rounded-t-2xl"
-        style={{ backgroundColor: alumno.color }}
-      />
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">{alumno.emoji}</span>
-        <div>
-          <p className="font-semibold leading-tight">{alumno.nombre}</p>
-          <p className="font-mono text-xs text-tenue">@{alumno.usuario}</p>
-        </div>
-      </div>
-      <p className="text-sm text-tenue">“{alumno.frase}”</p>
-      <div className="mt-auto">
-        <div className="mb-1 flex justify-between font-mono text-xs text-tenue">
-          <span>misiones</span>
-          <span>
-            {hechas}/{TOTAL_MISIONES}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-[#123850] bg-[#D69A3F]/20 text-2xl">
+            {alumno.emoji}
           </span>
+          <div className="min-w-0">
+            <p className="truncate font-black leading-tight text-[#123850]">{alumno.nombre}</p>
+            <p className="truncate font-mono text-xs font-bold text-[#123850]/70">
+              @{alumno.usuario}
+            </p>
+          </div>
         </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-borde">
+        <span className="shrink-0 rounded-lg border-2 border-[#123850] bg-[#D69A3F] px-2 py-0.5 font-mono text-xs font-black text-[#123850]">
+          {hechas}/{TOTAL_MISIONES}
+        </span>
+      </div>
+
+      <p className="text-sm font-medium text-[#123850]/70">“{alumno.frase}”</p>
+
+      <div className="mt-auto">
+        <div
+          className="h-3 overflow-hidden rounded-full border-2 border-[#123850] bg-[#123850]/10 p-0.5"
+          role="progressbar"
+          aria-valuenow={porcentaje}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Avance de ${alumno.nombre}`}
+        >
           <div
-            className="h-full rounded-full"
-            style={{ width: `${porcentaje}%`, backgroundColor: alumno.color }}
+            className="h-full rounded-full bg-[#D69A3F] transition-all duration-300 ease-out"
+            style={{ width: `${porcentaje}%` }}
           />
         </div>
       </div>
